@@ -36,6 +36,7 @@ def base_config() -> dict:
         ],
         "max_rounds": 1,
         "max_candidates_per_agent_per_round": 5,
+        "max_searches_per_agent_per_round": 40,
         "max_api_attempts": 1,
         "api_timeout_seconds": 10,
         "lean_timeout_seconds": 10,

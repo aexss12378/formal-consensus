@@ -120,6 +120,7 @@ class PipelineTests(unittest.TestCase):
             models=models,
             max_rounds=max_rounds,
             max_candidates_per_agent_per_round=5,
+            max_searches_per_agent_per_round=40,
             max_api_attempts=1,
             api_timeout_seconds=10,
             lean_timeout_seconds=10,

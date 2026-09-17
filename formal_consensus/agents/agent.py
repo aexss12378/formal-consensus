@@ -204,6 +204,13 @@ class ToolCallingProofAgent:
                     continue
 
                 if name == "lean_search":
+                    budget = self.config.max_searches_per_agent_per_round
+                    if len(private_searches) >= budget:
+                        # 預算是實驗設定的一部分，用完就收；pilot 顯示超過這個
+                        # 次數之後不再產出新的通過驗證的 proof。
+                        return round_output(
+                            f"本輪 lean_search 已達預算上限 {budget} 次"
+                        )
                     proof_body = arguments.get("probe_body")
                     if not isinstance(proof_body, str):
                         messages.append(

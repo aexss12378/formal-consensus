@@ -59,6 +59,7 @@ class ExperimentConfig:
     models: tuple[ModelConfig, ...]
     max_rounds: int
     max_candidates_per_agent_per_round: int
+    max_searches_per_agent_per_round: int
     max_api_attempts: int
     api_timeout_seconds: int
     lean_timeout_seconds: int
@@ -76,6 +77,9 @@ class ExperimentConfig:
             "max_rounds": self.max_rounds,
             "max_candidates_per_agent_per_round": (
                 self.max_candidates_per_agent_per_round
+            ),
+            "max_searches_per_agent_per_round": (
+                self.max_searches_per_agent_per_round
             ),
             "max_api_attempts": self.max_api_attempts,
             "api_timeout_seconds": self.api_timeout_seconds,
@@ -272,6 +276,10 @@ def load_config(path: str | Path) -> ExperimentConfig:
         max_candidates_per_agent_per_round=_require_positive_int(
             raw.get("max_candidates_per_agent_per_round"),
             "max_candidates_per_agent_per_round",
+        ),
+        max_searches_per_agent_per_round=_require_positive_int(
+            raw.get("max_searches_per_agent_per_round"),
+            "max_searches_per_agent_per_round",
         ),
         max_api_attempts=_require_positive_int(
             raw.get("max_api_attempts"), "max_api_attempts"
