@@ -10,7 +10,12 @@ from typing import Any, Protocol, Sequence
 
 from ..core.config import ExperimentConfig, ModelConfig
 from ..core.io_utils import utc_now_iso
-from ..core.schemas import Problem, SchemaError, validate_agent_submission
+from ..core.schemas import (
+    Problem,
+    SchemaError,
+    normalize_proof_body,
+    validate_agent_submission,
+)
 from ..tools.lean_runner import LeanRunner
 from ..tools.model_api import (
     ApiClient,
@@ -28,6 +33,10 @@ from .prompts import (
 
 # 模型連續這麼多次沒送出合法的單一工具呼叫就中止該輪，避免無上限重試。
 MAX_PROTOCOL_VIOLATIONS = 3
+
+# 同一份搜尋內容送到第這麼多次就中止該輪。Lean 對相同輸入只會給相同結果，
+# 再送下去不會有新資訊，但每一次都是一輪完整的 API 請求。
+MAX_IDENTICAL_SEARCHES = 3
 
 
 class ChatClient(Protocol):
@@ -112,9 +121,32 @@ class ToolCallingProofAgent:
             self.config.max_candidates_per_agent_per_round,
         )
         private_searches: list[dict[str, Any]] = []
+        search_counts: dict[str, int] = {}
         private_verifications: list[dict[str, Any]] = []
         api_responses: list[dict[str, Any]] = []
         staged_candidates: list[dict[str, Any]] = []
+
+        def round_output(stopped_by_system: str | None) -> dict[str, Any]:
+            submission = validate_agent_submission(
+                {"stop": True, "candidates": staged_candidates},
+                primary_techniques=primary_techniques,
+                visible_candidate_ids=visible_ids,
+                max_candidates=self.config.max_candidates_per_agent_per_round,
+            )
+            return {
+                "schema_version": 1,
+                "model_name": self.model.name,
+                "model_id": self.model.model_id,
+                "round": round_number,
+                "frozen_pool_candidate_ids": visible_ids,
+                "started_at": started_at,
+                "finished_at": utc_now_iso(),
+                "stopped_by_system": stopped_by_system,
+                "submission": submission.to_dict(),
+                "private_lean_searches": private_searches,
+                "private_lean_verifications": private_verifications,
+                "api_responses": api_responses,
+            }
 
         turn = 0
         violations = 0
@@ -190,6 +222,9 @@ class ToolCallingProofAgent:
                     )
                     checked = self.lean_runner.check(problem, proof_body, check_id)
                     lean_ran = True
+                    normalized = normalize_proof_body(proof_body)
+                    repeats = search_counts.get(normalized, 0) + 1
+                    search_counts[normalized] = repeats
                     record = {
                         "turn": turn,
                         "tool_call_id": call_id,
@@ -197,6 +232,12 @@ class ToolCallingProofAgent:
                         "result": checked.to_dict(),
                     }
                     private_searches.append(record)
+                    if repeats >= MAX_IDENTICAL_SEARCHES:
+                        # 已通過驗證的候選照樣留下；只是不再讓它繼續空轉。
+                        return round_output(
+                            f"第 {repeats} 次送出完全相同的 lean_search，"
+                            "Lean 對相同輸入只會回相同結果"
+                        )
                     tool_ok = checked.status not in {
                         "tool_failed",
                         "invalid_output",
@@ -306,25 +347,7 @@ class ToolCallingProofAgent:
                             )
                         )
                         continue
-                    submission = validate_agent_submission(
-                        {"stop": True, "candidates": staged_candidates},
-                        primary_techniques=primary_techniques,
-                        visible_candidate_ids=visible_ids,
-                        max_candidates=self.config.max_candidates_per_agent_per_round,
-                    )
-                    return {
-                        "schema_version": 1,
-                        "model_name": self.model.name,
-                        "model_id": self.model.model_id,
-                        "round": round_number,
-                        "frozen_pool_candidate_ids": visible_ids,
-                        "started_at": started_at,
-                        "finished_at": utc_now_iso(),
-                        "submission": submission.to_dict(),
-                        "private_lean_searches": private_searches,
-                        "private_lean_verifications": private_verifications,
-                        "api_responses": api_responses,
-                    }
+                    return round_output(None)
 
                 messages.append(
                     _tool_result_message(
