@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "problems": [
+    {
+      "problem_id": "midterm_q3_epsilon_delta",
+      "problem_text": "Prove the statement using the epsilon-delta definition of a limit: the limit of (x^2 - 2x - 8)/(x - 4) as x approaches 4 is 6.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q3_epsilon_delta :\n    ∀ ε > 0, ∃ δ > 0, ∀ x : ℝ,\n      0 < |x - 4| → |x - 4| < δ →\n      |(x ^ 2 - 2 * x - 8) / (x - 4) - 6| < ε :=",
+      "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+      "statement_fidelity_status": "confirmed"
+    },
+    {
+      "problem_id": "midterm_q4_piecewise_continuity",
+      "problem_text": "Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, and f(x) = sqrt(x - 1) if x > 1.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q4_piecewise_continuity :\n    Continuous (fun x : ℝ => if x ≤ 1 then 1 - x ^ 2 else Real.sqrt (x - 1)) :=",
+      "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+      "statement_fidelity_status": "confirmed"
+    }
+  ]
+}
