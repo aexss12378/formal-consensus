@@ -204,7 +204,13 @@ class PipelineTests(unittest.TestCase):
                 for item in round_two_pool:
                     self.assertEqual(
                         set(item),
-                        {"candidate_id", "round", "derived_from", "proof_body"},
+                        {
+                            "candidate_id",
+                            "round",
+                            "derived_from",
+                            "primary_technique",
+                            "proof_body",
+                        },
                     )
                 round_three_pool = agent.seen[2][1]
                 self.assertEqual(

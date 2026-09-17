@@ -38,6 +38,7 @@ def format_shared_pool(shared_pool: Sequence[dict[str, Any]]) -> str:
                 [
                     f"CANDIDATE {public['candidate_id']}",
                     f"round: {public['round']}",
+                    f"method: {public['primary_technique']}",
                     "derived_from: "
                     + json.dumps(public["derived_from"], ensure_ascii=False),
                     "proof_body:",
@@ -92,7 +93,10 @@ PROTOCOL
 - Save at most {max_candidates} candidates.
 - action=new requires derived_from=[].
 - action=derived requires one or more candidate IDs visible in the shared pool.
-- Do not repeat a proof already present in the shared pool.
+- Each shared proof is listed with the method its author assigned. Your candidate
+  must use a method that does not already appear in the pool; another tactic
+  script for a method already there is not a contribution. If every method you can
+  actually prove is already in the pool, call stop.
 - Aim for a small number of genuinely different methods, not an exhaustive search of
   Mathlib. After you have saved at least one candidate, call stop once about five
   further searches have failed to yield a new verified proof.

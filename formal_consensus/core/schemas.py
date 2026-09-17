@@ -233,10 +233,16 @@ def validate_agent_submission(
 
 
 def public_pool_entry(candidate: dict[str, Any]) -> dict[str, Any]:
-    """只回傳下一輪允許看見的欄位。"""
+    """只回傳下一輪允許看見的欄位。
+
+    方法標籤刻意公開：最終產出是每個課本方法一份 proof，同方法的其他寫法
+    沒有價值，所以下一輪必須看得出哪些方法已經有人做過。模型名稱與輪次以外
+    的身分資訊仍然不外洩。
+    """
     return {
         "candidate_id": candidate["candidate_id"],
         "round": candidate["round"],
         "derived_from": list(candidate.get("derived_from", [])),
+        "primary_technique": candidate["primary_technique_claim"],
         "proof_body": candidate["proof_body"],
     }

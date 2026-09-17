@@ -111,12 +111,20 @@ class SchemaAndPromptTests(unittest.TestCase):
         }
         public = public_pool_entry(internal)
         self.assertEqual(
-            set(public), {"candidate_id", "round", "derived_from", "proof_body"}
+            set(public),
+            {
+                "candidate_id",
+                "round",
+                "derived_from",
+                "primary_technique",
+                "proof_body",
+            },
         )
         rendered = format_shared_pool([internal])
         self.assertNotIn("secret-model", rendered)
-        self.assertNotIn("Power Rule", rendered)
         self.assertNotIn("gpt", rendered)
+        # 方法標籤刻意公開，讓下一輪看得出哪些方法已經有人做過。
+        self.assertIn("Power Rule", rendered)
 
     def test_derived_candidate_must_reference_visible_candidate(self) -> None:
         with self.assertRaises(SchemaError):
