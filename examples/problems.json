@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "problems": [
+    {
+      "problem_id": "demo_addition",
+      "problem_text": "Prove that one plus one equals two.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem demo_addition : (1 : Nat) + 1 = 2 :=",
+      "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+      "statement_fidelity_status": "formal_benchmark"
+    },
+    {
+      "problem_id": "demo_derivative_square",
+      "problem_text": "Prove that the derivative of f(x) = x^2 at every real number x is 2x.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem demo_derivative_square (x : ℝ) :\n    HasDerivAt (fun y : ℝ => y ^ 2) (2 * x) x :=",
+      "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+      "statement_fidelity_status": "formal_benchmark"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "models": [
+    {
+      "name": "deepseek",
+      "model_id": "deepseek-v4-flash:0731",
+      "api": "ollama",
+      "temperature": 0.0,
+      "max_completion_tokens": 8000
+    },
+    {
+      "name": "qwen",
+      "model_id": "qwen3-coder:480b",
+      "api": "ollama",
+      "temperature": 0.0,
+      "max_completion_tokens": 8000
+    },
+    {
+      "name": "gemma",
+      "model_id": "gemma4:31b",
+      "api": "ollama",
+      "temperature": 0.0,
+      "max_completion_tokens": 8000
+    }
+  ],
+  "max_rounds": 3,
+  "max_candidates_per_agent_per_round": 5,
+  "max_api_attempts": 3,
+  "api_timeout_seconds": 240,
+  "lean_timeout_seconds": 300,
+  "apis": {
+    "ollama": {
+      "type": "ollama",
+      "base_url": "https://ollama.com/v1/chat/completions",
+      "api_key_env": "OLLAMA_API_KEY"
+    }
+  },
+  "lean_project_dir": "lean_project",
+  "repl_path": ".tools/repl/.lake/build/bin/repl",
+  "runs_dir": "runs",
+  "taxonomy_path": "taxonomy.json"
+}

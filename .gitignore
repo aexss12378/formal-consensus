@@ -1,0 +1,8 @@
+.env
+.venv/
+.tools/
+__pycache__/
+*.py[cod]
+runs/
+lean_project/.lake/
+lean_project/ProofPool/Generated/

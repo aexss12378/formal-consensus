@@ -1,0 +1,11 @@
+name = "ProofPool"
+defaultTargets = ["ProofPool"]
+
+[[lean_lib]]
+name = "ProofPool"
+moreLeanArgs = ["-E", "hasSorry"]
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "e6b85444bca76ab71662613e9c7dbbd702302272"
