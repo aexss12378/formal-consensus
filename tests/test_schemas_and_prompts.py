@@ -126,6 +126,21 @@ class SchemaAndPromptTests(unittest.TestCase):
         # 方法標籤刻意公開，讓下一輪看得出哪些方法已經有人做過。
         self.assertIn("Power Rule", rendered)
 
+    def test_public_pool_entry_can_read_its_own_output(self) -> None:
+        # pipeline 與 prompts 會各轉一次，重複轉換不能壞掉。
+        internal = {
+            "candidate_id": "q1__C0001",
+            "round": 1,
+            "derived_from": [],
+            "proof_body": "by norm_num",
+            "model_name": "gpt",
+            "primary_technique_claim": "Power Rule",
+        }
+        once = public_pool_entry(internal)
+        twice = public_pool_entry(once)
+        self.assertEqual(once, twice)
+        self.assertEqual(format_shared_pool([once]), format_shared_pool([internal]))
+
     def test_derived_candidate_must_reference_visible_candidate(self) -> None:
         with self.assertRaises(SchemaError):
             validate_agent_submission(

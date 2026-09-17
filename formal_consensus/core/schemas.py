@@ -239,10 +239,16 @@ def public_pool_entry(candidate: dict[str, Any]) -> dict[str, Any]:
     沒有價值，所以下一輪必須看得出哪些方法已經有人做過。模型名稱與輪次以外
     的身分資訊仍然不外洩。
     """
+    # pipeline 先把候選轉成公開格式再傳給代理，prompts 排版時又會轉一次，
+    # 所以這個函式必須能吃自己的輸出：內部紀錄用 primary_technique_claim，
+    # 已轉換過的條目則是 primary_technique。
+    technique = candidate.get("primary_technique_claim")
+    if technique is None:
+        technique = candidate["primary_technique"]
     return {
         "candidate_id": candidate["candidate_id"],
         "round": candidate["round"],
         "derived_from": list(candidate.get("derived_from", [])),
-        "primary_technique": candidate["primary_technique_claim"],
+        "primary_technique": technique,
         "proof_body": candidate["proof_body"],
     }
