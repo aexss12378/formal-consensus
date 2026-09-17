@@ -93,6 +93,9 @@ PROTOCOL
 - action=new requires derived_from=[].
 - action=derived requires one or more candidate IDs visible in the shared pool.
 - Do not repeat a proof already present in the shared pool.
+- Aim for a small number of genuinely different methods, not an exhaustive search of
+  Mathlib. After you have saved at least one candidate, call stop once about five
+  further searches have failed to yield a new verified proof.
 - Call stop when you have no further contribution from the current shared-pool
   snapshot, even when no candidate was saved. If this round adds a verified proof, the
   system may call you again with the changed pool in a later round.
