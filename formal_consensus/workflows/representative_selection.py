@@ -99,6 +99,7 @@ def run_representative_selection(run_dir: Path) -> Path:
             )
 
         problem_rows: list[dict[str, Any]] = []
+        errors: list[str] = []
         selection_dir = root / "problems" / problem_id / "selection_votes"
         selection_dir.mkdir(parents=True, exist_ok=True)
         for technique_index, technique in enumerate(techniques, start=1):
@@ -160,14 +161,22 @@ def run_representative_selection(run_dir: Path) -> Path:
                     for model, path in jobs
                 }
                 for future in as_completed(futures):
-                    _, path = futures[future]
-                    vote = future.result()
+                    model, path = futures[future]
+                    try:
+                        vote = future.result()
+                    except Exception as exc:
+                        errors.append(f"{technique}／{model.name}：{exc}")
+                        continue
                     vote["schema_version"] = 1
                     vote["problem_id"] = problem_id
                     vote["primary_technique"] = technique
                     vote["option_to_candidate"] = option_to_candidate
                     write_json_atomic(path, vote)
                     votes.append(vote)
+
+            if errors:
+                # 這一組票數必定不完整，先跳過，讓其他方法群組把票跑完再一起回報。
+                continue
 
             votes.sort(
                 key=lambda item: [m.name for m in config.models].index(
@@ -194,6 +203,12 @@ def run_representative_selection(run_dir: Path) -> Path:
                     "option_to_candidate": option_to_candidate,
                     "votes": votes,
                 }
+            )
+
+        if errors:
+            raise RuntimeError(
+                f"{problem_id} 有 {len(errors)} 筆代表解選擇失敗；已完成的票已保存，"
+                f"用相同批次續跑不會重複呼叫：{errors}"
             )
 
         result = {

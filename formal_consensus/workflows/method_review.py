@@ -106,6 +106,8 @@ def run_method_review(run_dir: Path) -> Path:
                 else:
                     jobs.append((candidate, model, path))
 
+        # 單一審查失敗不能連累同批已完成的票：逐一保存，最後才一起回報。
+        errors: list[str] = []
         with ThreadPoolExecutor(max_workers=3) as executor:
             futures = {
                 executor.submit(
@@ -122,10 +124,22 @@ def run_method_review(run_dir: Path) -> Path:
                 for candidate, model, path in jobs
             }
             for future in as_completed(futures):
-                candidate, _, path = futures[future]
-                vote = future.result()
+                candidate, model, path = futures[future]
+                try:
+                    vote = future.result()
+                except Exception as exc:
+                    errors.append(
+                        f"{candidate['candidate_id']}／{model.name}：{exc}"
+                    )
+                    continue
                 write_json_atomic(path, vote)
                 votes_by_candidate[candidate["candidate_id"]].append(vote)
+
+        if errors:
+            raise RuntimeError(
+                f"{problem_id} 有 {len(errors)} 筆方法審查失敗；已完成的票已保存，"
+                f"用相同批次續跑不會重複呼叫：{errors}"
+            )
 
         rows: list[dict[str, Any]] = []
         for candidate in candidates:
