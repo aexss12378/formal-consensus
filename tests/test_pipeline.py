@@ -213,7 +213,7 @@ class PipelineTests(unittest.TestCase):
 
             state = read_json(run_dir / "problems" / "q1" / "state.json")
             self.assertEqual(state["status"], "complete")
-            self.assertEqual(state["stop_reason"], "all_agents_stopped")
+            self.assertEqual(state["stop_reason"], "no_new_verified_candidate")
             self.assertEqual(len(state["shared_pool"]), 3)
             self.assertEqual(
                 sum(row["status"] == "duplicate_verified" for row in state["candidates"]),

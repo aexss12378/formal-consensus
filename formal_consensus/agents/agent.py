@@ -26,6 +26,10 @@ from .prompts import (
 )
 
 
+# 模型連續這麼多次沒送出合法的單一工具呼叫就中止該輪，避免無上限重試。
+MAX_PROTOCOL_VIOLATIONS = 3
+
+
 class ChatClient(Protocol):
     def chat(
         self,
@@ -113,14 +117,21 @@ class ToolCallingProofAgent:
         staged_candidates: list[dict[str, Any]] = []
 
         turn = 0
+        violations = 0
         while True:
             turn += 1
+            if violations >= MAX_PROTOCOL_VIOLATIONS:
+                raise RuntimeError(
+                    f"{self.model.name} 連續 {violations} 次沒有送出合法的單一工具"
+                    "呼叫；中止本輪，不再繼續請求"
+                )
             result = self.client.chat(self.model, messages, tools, tool_choice="auto")
             api_responses.append(result.to_record())
             assistant_message = assistant_message_for_history(result.assistant_message)
             messages.append(assistant_message)
             calls = extract_tool_calls(assistant_message)
             if not calls:
+                violations += 1
                 messages.append(
                     {
                         "role": "user",
@@ -132,6 +143,7 @@ class ToolCallingProofAgent:
                 )
                 continue
             if len(calls) > 1:
+                violations += 1
                 for call in calls:
                     messages.append(
                         _tool_result_message(
@@ -147,6 +159,7 @@ class ToolCallingProofAgent:
                     )
                 continue
 
+            lean_ran = False
             for call_index, call in enumerate(calls, start=1):
                 name = call["function"]["name"]
                 call_id = call["id"]
@@ -176,6 +189,7 @@ class ToolCallingProofAgent:
                         f"{self.model.name}_t{turn:02d}_{call_index:02d}"
                     )
                     checked = self.lean_runner.check(problem, proof_body, check_id)
+                    lean_ran = True
                     record = {
                         "turn": turn,
                         "tool_call_id": call_id,
@@ -255,6 +269,7 @@ class ToolCallingProofAgent:
                         candidate.proof_body,
                         check_id,
                     )
+                    lean_ran = True
                     saved = checked.verified
                     if saved:
                         staged_candidates.append(candidate.to_dict())
@@ -317,6 +332,8 @@ class ToolCallingProofAgent:
                         {"ok": False, "error": f"unknown tool: {name}"},
                     )
                 )
+
+            violations = 0 if lean_ran else violations + 1
 
 
 def build_default_agents(

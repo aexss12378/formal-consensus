@@ -239,7 +239,7 @@ class ConsensusPipeline:
             state["updated_at"] = utc_now_iso()
             self._save_problem_state(problem_dir, state)
             raise
-        records, accepted, failures, stop_flags, tool_failed = self._verify_round(
+        records, accepted, failures, tool_failed = self._verify_round(
             problem, state, outputs, round_number
         )
         write_json_atomic(
@@ -268,14 +268,11 @@ class ConsensusPipeline:
         state["next_round"] = round_number + 1
 
         # 只要共享池有新增內容，就必須再開一輪，讓其他模型真的看見它。
-        # stop 是模型對本輪既有快照的判斷；共享池改變後，該判斷不再適用。
+        # 代理只有呼叫 stop 才會結束一輪，所以旗標恆為 True，不再用它分辨停止原因；
+        # 想知道本輪有沒有人交了卻沒通過，查 failures.json。
         if not accepted:
             state["status"] = "complete"
-            state["stop_reason"] = (
-                "all_agents_stopped"
-                if all(stop_flags)
-                else "no_new_verified_candidate"
-            )
+            state["stop_reason"] = "no_new_verified_candidate"
         elif round_number >= self.config.max_rounds:
             state["status"] = "complete"
             state["stop_reason"] = "max_rounds"
@@ -395,13 +392,11 @@ class ConsensusPipeline:
         list[dict[str, Any]],
         list[dict[str, Any]],
         list[dict[str, Any]],
-        list[bool],
         bool,
     ]:
         records: list[dict[str, Any]] = []
         accepted: list[dict[str, Any]] = []
         failures: list[dict[str, Any]] = []
-        stop_flags: list[bool] = []
         known_hashes = {
             item["proof_hash"]: item["candidate_id"] for item in state["shared_pool"]
         }
@@ -416,7 +411,6 @@ class ConsensusPipeline:
                 [public_pool_entry(item) for item in state["shared_pool"]],
                 round_number,
             )
-            stop_flags.append(submission.stop)
             for index, candidate in enumerate(submission.candidates, start=1):
                 submission_id = (
                     f"{problem.problem_id}__r{round_number:03d}__"
@@ -462,7 +456,7 @@ class ConsensusPipeline:
                     known_hashes[proof_hash] = candidate_id
                     accepted.append(record)
                 records.append(record)
-        return records, accepted, failures, stop_flags, tool_failed
+        return records, accepted, failures, tool_failed
 
     @staticmethod
     def _save_problem_state(problem_dir: Path, state: dict[str, Any]) -> None:
