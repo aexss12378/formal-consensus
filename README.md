@@ -9,26 +9,26 @@
 - 純 Python 實作，不使用 LangGraph。
 - 共享池在程式內是 `list`，每輪開始時凍結快照。
 - 三個模型在同一輪看到完全相同的共享池內容。
-- 每個模型都有私有的 `lean_search` 與 `lean_verify` 工具；搜尋紀錄不會進入共享池。
+- 每個模型都有 `lean_check` 與 `lean_submit` 兩個工具；`lean_check` 的紀錄不會進入共享池。
 - 預設使用同一個常駐 Lean REPL，`Mathlib` 每次流程只載入一次；`config.json` 未設定 `repl_path` 時才使用原本的 `lake build` 後端。
 - 模型只能提交固定 theorem header 的 `by ...` 證明本體。
 - 含 `sorry`、`admit`、新增 `axiom` 或 `opaque` 的候選直接拒絕。
 - `lake build` 後端以 `-E hasSorry` 執行；REPL 後端則同時檢查 `sorries` 與 `declaration uses sorry` 訊息。`apply?` 等搜尋 tactic 留下部分建議時，兩種後端都不能把它誤判為完整證明。
 - 只有後端重新執行 Lean 並通過的完整證明才進共享池。
 - 失敗候選保留於研究紀錄，但不提供給下一輪模型。
-- 方法標籤與作者資訊只保存在後端，不會進入共享提示。
+- 作者資訊只保存在後端，不會進入共享提示；方法標籤會隨 proof 一起放進共享池。
 - 第一版不打亂共享池順序、不做摘要、不做檔案檢索。
 - 若完整共享池超過模型脈絡或 API 限制，該輪明確失敗並留下紀錄；系統不會靜默截斷候選。
 
 題目輸入與固定 theorem header 不建立雜湊；續跑時直接比對批次內凍結的 JSON。內部唯一保留的 `proof_hash` 只用來判斷兩份正規化後的 proof body 是否字串相同，不用來宣稱語意、方法或命題相同。
 
-方法名稱雖然是自然語言欄位，但只作為後端標註，不會顯示給下一輪模型。因此代理之間真正交換的解題內容仍只有通過驗證的 Lean 證明。
+代理之間交換的是方法標籤加上通過驗證的 Lean 證明。標籤公開是刻意的取捨：最終產出是每個課本方法一份 proof，同一個方法的其他 tactic 寫法在批改上沒有價值，所以下一輪必須看得出哪些方法已經有人做過。標籤取自 59 個固定分類，不是自由文字，而且沿用產生者自己標的值 —— 輪次進行中拿不到 `method_review` 的審查結果，所以下一輪可能讀到標錯的標籤，這點必須與形式驗證結果分開報告。入池與否仍由 `proof_hash` 決定，標籤只供閱讀，模型沒有謊報標籤的好處。
 
 ## 每輪實際流程
 
 1. 系統在輪次開始時複製一份共享池快照。
 2. 三個模型平行收到完全相同的快照；同輪模型看不到彼此的新提交。
-3. 模型可私下呼叫 `lean_search`，在固定 theorem goal 中使用 `exact?`、`apply?`、`simp?`、`rw?`、`aesop?` 或 `library_search` 尋找可用定理與 tactic；`lean_verify` 驗證成功後會立刻把該 proof 存成本輪候選，模型沒有其他候選時呼叫 `stop`。工具不另設個別呼叫上限。
+3. 模型可私下呼叫 `lean_check`，送出的可以是用 `exact?`、`apply?`、`simp?`、`rw?`、`aesop?` 或 `library_search` 的不完整探測，也可以是想先確認的完整 proof，送進去的內容一律不入池；`lean_submit` 是提交動作，驗證成功後會立刻把該 proof 存成本輪候選且無法撤回，模型沒有其他候選時呼叫 `stop`。工具不另設個別呼叫上限。
 4. 後端依 `config.json` 的固定模型順序，重新驗證每一份候選。
 5. 只有唯一且通過驗證的候選會取得匿名流水號並加入下一輪共享池。
 6. 只要本輪有新的有效候選入池，就會再開一輪，讓三個模型都看到更新後的共享池；沒有新增有效候選或到達輪次上限時才結束。模型的 `stop` 只代表它對當前快照已無其他貢獻，不能阻止新入池內容被下一輪看見。
@@ -102,7 +102,7 @@ source .env
 
 正式執行前，必須先確認 `config.json` 內三個模型的精確型號仍可使用，並凍結設定。
 
-系統仍支援 OpenRouter 與 Ollama 兩種 API，每個模型用 `api` 欄位指定其中一個；目前的 `config.json` 則全部固定走 Ollama Cloud：[`deepseek-v4-flash:0731`](https://ollama.com/library/deepseek-v4-flash:0731-cloud)、[`qwen3-coder:480b`](https://ollama.com/library/qwen3-coder:480b) 與 [`gemma4:31b`](https://ollama.com/library/gemma4:31b-cloud)。這些是直連 `https://ollama.com/v1/chat/completions` 使用的模型識別碼，因此不加 `-cloud`。指定 API 或模型不可用時，該模型呼叫會明確失敗，不會靜默改走另一個 API。每個 API 回覆紀錄仍會保存實際回傳的模型與供應端欄位，供事後稽核。
+系統仍支援 OpenRouter 與 Ollama 兩種 API，每個模型用 `api` 欄位指定其中一個；目前的 `config.json` 則全部固定走 Ollama Cloud：[`deepseek-v4-flash:0731`](https://ollama.com/library/deepseek-v4-flash:0731-cloud)、[`qwen3.5:397b`](https://ollama.com/library/qwen3.5:397b-cloud) 與 [`gemma4:31b`](https://ollama.com/library/gemma4:31b-cloud)。這些是直連 `https://ollama.com/v1/chat/completions` 使用的模型識別碼，因此不加 `-cloud`。指定 API 或模型不可用時，該模型呼叫會明確失敗，不會靜默改走另一個 API。每個 API 回覆紀錄仍會保存實際回傳的模型與供應端欄位，供事後稽核。
 
 ## 輸入格式
 
@@ -199,7 +199,7 @@ PYTHONDONTWRITEBYTECODE=1 uv run python -m unittest discover -s tests -v
 
 Lean 通過只代表固定 Lean 命題具有一份通過檢查的證明。它不會自動確認自然語言題目與 Lean 命題完全相同，也不會自動確認證明所屬的教學方法。方法審查是多模型盲審結果，必須與形式驗證結果分開報告。
 
-本實驗評估的是「固定模型加上相同 Lean 工具」形成的代理系統，而不是模型不使用工具時的純記憶能力。三個模型取得相同搜尋與驗證介面；每個代理持續使用工具，成功的 `lean_verify` 會自動暫存候選，直到代理自行呼叫 `stop`。系統不另設每輪 turn 或 Lean 工具呼叫上限。搜尋內容屬於單一代理的私有推理過程，不構成代理間的自然語言溝通。
+本實驗評估的是「固定模型加上相同 Lean 工具」形成的代理系統，而不是模型不使用工具時的純記憶能力。三個模型取得相同的檢查與提交介面；每個代理持續使用工具，成功的 `lean_submit` 會自動暫存候選，直到代理自行呼叫 `stop`。系統不另設每輪 turn 或 Lean 工具呼叫上限。搜尋內容屬於單一代理的私有推理過程，不構成代理間的自然語言溝通。
 
 `statement_fidelity_status=unresolved` 的題目可以用來除錯或探索，但不應混入主結果宣稱「解對原題」；主分析應事先限定為 `confirmed` 或本來就以形式命題定義的 `formal_benchmark`。另外，方法盲審隱藏了候選作者，但仍由同一組三個模型評審，其中可能包含原產生模型，因此它是操作性分組機制，不是獨立人工 ground truth。
 

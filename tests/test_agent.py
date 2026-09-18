@@ -21,15 +21,15 @@ class FakeClient:
     def chat(self, model, messages, tools, *, tool_choice="auto"):
         self.calls += 1
         if self.calls == 1:
-            name = "lean_search"
-            arguments = '{"probe_body": "by\\n  exact?"}'
+            name = "lean_check"
+            arguments = '{"proof_body": "by\\n  exact?"}'
         elif self.calls == 2:
             search_result = messages[-1]
             self._search_result_reached_model = (
                 search_result["role"] == "tool"
                 and "Try this: exact rfl" in search_result["content"]
             )
-            name = "lean_verify"
+            name = "lean_submit"
             arguments = (
                 '{"action": "new", "derived_from": [], '
                 '"primary_technique": "Power Rule", '
@@ -150,7 +150,7 @@ class AgentTests(unittest.TestCase):
             self.assertEqual(client.calls, 3)
             self.assertTrue(client._search_result_reached_model)
             self.assertTrue(client._verify_result_reached_model)
-            self.assertEqual(len(result["private_lean_searches"]), 1)
+            self.assertEqual(len(result["private_lean_checkes"]), 1)
             self.assertEqual(len(result["private_lean_verifications"]), 1)
             self.assertTrue(result["submission"]["stop"])
             self.assertEqual(

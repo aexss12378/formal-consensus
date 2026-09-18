@@ -143,7 +143,7 @@ class ToolCallingProofAgent:
                 "finished_at": utc_now_iso(),
                 "stopped_by_system": stopped_by_system,
                 "submission": submission.to_dict(),
-                "private_lean_searches": private_searches,
+                "private_lean_checkes": private_searches,
                 "private_lean_verifications": private_verifications,
                 "api_responses": api_responses,
             }
@@ -168,7 +168,7 @@ class ToolCallingProofAgent:
                     {
                         "role": "user",
                         "content": (
-                            "Protocol error: call lean_search, lean_verify, or stop. "
+                            "Protocol error: call lean_check, lean_submit, or stop. "
                             "Do not answer with prose."
                         ),
                     }
@@ -203,22 +203,22 @@ class ToolCallingProofAgent:
                     )
                     continue
 
-                if name == "lean_search":
+                if name == "lean_check":
                     budget = self.config.max_searches_per_agent_per_round
                     if len(private_searches) >= budget:
                         # 預算是實驗設定的一部分，用完就收；pilot 顯示超過這個
                         # 次數之後不再產出新的通過驗證的 proof。
                         return round_output(
-                            f"本輪 lean_search 已達預算上限 {budget} 次"
+                            f"本輪 lean_check 已達預算上限 {budget} 次"
                         )
-                    proof_body = arguments.get("probe_body")
+                    proof_body = arguments.get("proof_body")
                     if not isinstance(proof_body, str):
                         messages.append(
                             _tool_result_message(
                                 call_id,
                                 {
                                     "ok": False,
-                                    "error": "probe_body must be a string",
+                                    "error": "proof_body must be a string",
                                 },
                             )
                         )
@@ -242,7 +242,7 @@ class ToolCallingProofAgent:
                     if repeats >= MAX_IDENTICAL_SEARCHES:
                         # 已通過驗證的候選照樣留下；只是不再讓它繼續空轉。
                         return round_output(
-                            f"第 {repeats} 次送出完全相同的 lean_search，"
+                            f"第 {repeats} 次送出完全相同的 lean_check，"
                             "Lean 對相同輸入只會回相同結果"
                         )
                     tool_ok = checked.status not in {
@@ -262,7 +262,7 @@ class ToolCallingProofAgent:
                     )
                     continue
 
-                if name == "lean_verify":
+                if name == "lean_submit":
                     if (
                         len(staged_candidates)
                         >= self.config.max_candidates_per_agent_per_round

@@ -12,8 +12,9 @@ GENERATION_SYSTEM_PROMPT = """You are one member of a three-model formal proof t
 Your task is to produce complete Lean 4 proof bodies for one fixed theorem.
 
 The theorem header is fixed by the system. You may not rewrite, weaken, or replace it.
-Use lean_search privately to probe the fixed goal and discover Mathlib declarations or
-tactics. Use lean_verify to validate and save each complete candidate proof. When you
+Use lean_check privately: it runs anything from an incomplete probe to a finished
+proof against the fixed goal and never saves what you send. Use lean_submit only to
+put a proof into the shared pool. When you
 have no further candidate, call stop. Do not answer with prose instead of a tool call.
 
 Inter-agent communication is Lean-only. The shared pool contains complete verified
@@ -85,18 +86,24 @@ and is not shared with other agents.
 PROTOCOL
 - Call exactly one tool in each response. Wait for its result before choosing the next
   tool.
-- Use lean_search and lean_verify as needed.
-- lean_search may contain an incomplete probe using exact?, apply?, simp?, rw?, aesop?,
-  or library_search. Its diagnostics are private and never save a candidate.
-- lean_verify must contain one complete proof and its candidate metadata. A successful
+- Use lean_check and lean_submit as needed.
+- lean_check accepts an incomplete probe using exact?, apply?, simp?, rw?, aesop?, or
+  library_search, and equally accepts a complete proof you want to test. Its result
+  tells you whether the goal closes. Nothing sent to lean_check is ever saved.
+- lean_submit must contain one complete proof and its candidate metadata. A successful
   verification automatically saves that candidate for this round.
 - Save at most {max_candidates} candidates.
 - action=new requires derived_from=[].
 - action=derived requires one or more candidate IDs visible in the shared pool.
-- Each shared proof is listed with the method its author assigned. Your candidate
-  must use a method that does not already appear in the pool; another tactic
-  script for a method already there is not a contribution. If every method you can
-  actually prove is already in the pool, call stop.
+- Before calling lean_submit, compare your proof against every proof in the pool.
+  Read what those proofs actually do; the method label its author assigned is not
+  evidence that a proof differs from yours. Verify yours only when it reaches the
+  goal by a route none of them takes. If yours does the same thing as one already
+  in the pool -- even under a different name -- or if the one already there does it
+  better, do not verify it.
+- Saving nothing this round is a correct and expected outcome. You are not expected
+  to contribute in every round. A round where the pool already covers everything you
+  can prove should end with stop and no saved candidate.
 - Aim for a small number of genuinely different methods, not an exhaustive search of
   Mathlib. After you have saved at least one candidate, call stop once about five
   further searches have failed to yield a new verified proof.
@@ -113,16 +120,18 @@ def generation_tools(
         {
             "type": "function",
             "function": {
-                "name": "lean_search",
+                "name": "lean_check",
                 "description": (
-                    "Privately probe the fixed theorem goal. The probe may be incomplete "
-                    "and may use Mathlib search or suggestion tactics. Lean diagnostics "
-                    "and Try this suggestions are returned, but the probe is never shared."
+                    "Privately check any tactic body against the fixed theorem goal. "
+                    "It may be an incomplete probe using Mathlib search or suggestion "
+                    "tactics, or a complete proof you want to test before deciding "
+                    "whether to submit it. The result tells you whether it closes the "
+                    "goal. Nothing sent here is ever saved or shared."
                 ),
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "probe_body": {
+                        "proof_body": {
                             "type": "string",
                             "description": (
                                 "A Lean tactic body starting with by, such as "
@@ -130,7 +139,7 @@ def generation_tools(
                             ),
                         }
                     },
-                    "required": ["probe_body"],
+                    "required": ["proof_body"],
                     "additionalProperties": False,
                 },
             },
@@ -138,9 +147,12 @@ def generation_tools(
         {
             "type": "function",
             "function": {
-                "name": "lean_verify",
+                "name": "lean_submit",
                 "description": (
-                    "Type-check and save one complete candidate proof for this round. "
+                    "Submit one proof to the shared pool. This is the submission "
+                    "step, not the checking step: use lean_check to check a proof "
+                    "first. Anything that passes here is saved to the pool "
+                    "immediately and cannot be withdrawn. "
                     f"At most {max_candidates} verified candidates may be saved."
                 ),
                 "parameters": {
@@ -192,8 +204,13 @@ def generation_tools(
 
 METHOD_REVIEW_SYSTEM_PROMPT = """You are reviewing the claimed primary mathematical
 technique of one already Lean-verified proof. Do not vote on mathematical truth; Lean
-has already checked the fixed theorem. Judge only whether the claimed technique is the
-main route embodied in the proof. You must call review_method exactly once.
+has already checked the fixed theorem. You must call review_method exactly once.
+
+The primary technique is the one that determines the overall shape of the proof:
+replace it and the proof has to be rewritten from the start. Algebraic manipulation
+performed to simplify an expression -- factoring, cancelling, clearing denominators,
+expanding -- is not the primary technique, however laborious that step is. A
+technique that merely appears somewhere in the proof is not primary either.
 """
 
 
@@ -216,8 +233,9 @@ VERIFIED PROOF BODY
 {candidate['proof_body']}
 ```
 
-Choose pass when the claimed technique is the main derivation route, questionable when
-it is present but not clearly primary, and fail when the label is inconsistent or forced.
+Choose pass when the claimed technique determines the overall shape of this proof,
+questionable when it is present but a different technique determines the shape, and
+fail when the label is inconsistent with the proof or forced.
 """
 
 
