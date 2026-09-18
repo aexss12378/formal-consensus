@@ -34,8 +34,10 @@ from .prompts import (
 # 模型連續這麼多次沒送出合法的單一工具呼叫就中止該輪，避免無上限重試。
 MAX_PROTOCOL_VIOLATIONS = 3
 
-# 同一份搜尋內容送到第這麼多次就中止該輪。Lean 對相同輸入只會給相同結果，
-# 再送下去不會有新資訊，但每一次都是一輪完整的 API 請求。
+# 連續送出這麼多次完全相同的搜尋內容就中止該輪。Lean 對相同輸入只會給相同
+# 結果，連續重送代表模型卡住了，而每一次都是一輪完整的 API 請求。
+# 判準是「連續」而非「累計」：Q4 實測模型送 18 次有 16 種不同內容，是交錯
+# 探索而不是空轉，用累計會把還在找路的模型切斷。
 MAX_IDENTICAL_SEARCHES = 3
 
 
@@ -121,7 +123,8 @@ class ToolCallingProofAgent:
             self.config.max_candidates_per_agent_per_round,
         )
         private_searches: list[dict[str, Any]] = []
-        search_counts: dict[str, int] = {}
+        last_search: str | None = None
+        repeated_searches = 0
         private_verifications: list[dict[str, Any]] = []
         api_responses: list[dict[str, Any]] = []
         staged_candidates: list[dict[str, Any]] = []
@@ -230,8 +233,11 @@ class ToolCallingProofAgent:
                     checked = self.lean_runner.check(problem, proof_body, check_id)
                     lean_ran = True
                     normalized = normalize_proof_body(proof_body)
-                    repeats = search_counts.get(normalized, 0) + 1
-                    search_counts[normalized] = repeats
+                    repeated_searches = (
+                        repeated_searches + 1 if normalized == last_search else 1
+                    )
+                    last_search = normalized
+                    repeats = repeated_searches
                     record = {
                         "turn": turn,
                         "tool_call_id": call_id,
@@ -242,7 +248,7 @@ class ToolCallingProofAgent:
                     if repeats >= MAX_IDENTICAL_SEARCHES:
                         # 已通過驗證的候選照樣留下；只是不再讓它繼續空轉。
                         return round_output(
-                            f"第 {repeats} 次送出完全相同的 lean_check，"
+                            f"連續 {repeats} 次送出完全相同的 lean_check，"
                             "Lean 對相同輸入只會回相同結果"
                         )
                     tool_ok = checked.status not in {
