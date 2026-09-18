@@ -143,7 +143,7 @@ class ToolCallingProofAgent:
                 "finished_at": utc_now_iso(),
                 "stopped_by_system": stopped_by_system,
                 "submission": submission.to_dict(),
-                "private_lean_checkes": private_searches,
+                "private_lean_searches": private_searches,
                 "private_lean_verifications": private_verifications,
                 "api_responses": api_responses,
             }

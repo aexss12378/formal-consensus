@@ -150,7 +150,7 @@ class AgentTests(unittest.TestCase):
             self.assertEqual(client.calls, 3)
             self.assertTrue(client._search_result_reached_model)
             self.assertTrue(client._verify_result_reached_model)
-            self.assertEqual(len(result["private_lean_checkes"]), 1)
+            self.assertEqual(len(result["private_lean_searches"]), 1)
             self.assertEqual(len(result["private_lean_verifications"]), 1)
             self.assertTrue(result["submission"]["stop"])
             self.assertEqual(
