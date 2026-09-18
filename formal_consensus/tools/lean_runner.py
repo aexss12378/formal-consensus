@@ -60,11 +60,19 @@ def validate_proof_body(proof_body: str) -> str:
     return proof
 
 
+# Lean 預設會把陳述裡不認識的名字當成自動產生的型別變數，編譯照樣通過。
+# theorem header 是人手寫的，打錯一個沒有點號的名字（ℝ 寫成 R）就會證到別的
+# 命題上而毫無警訊，所以每次驗證都關掉這個行為。用 `in` 是為了只管接下來那
+# 一個宣告，不改動常駐 REPL 的環境設定。
+AUTO_IMPLICIT_OFF = "set_option autoImplicit false in\n"
+
+
 def compose_lean_source(problem: Problem, proof_body: str) -> str:
     proof = validate_proof_body(proof_body)
     return (
         "\n".join(problem.lean_imports)
         + "\n\n"
+        + AUTO_IMPLICIT_OFF
         + problem.lean_theorem_header.rstrip()
         + "\n"
         + proof
@@ -379,7 +387,9 @@ class ReplLeanRunner:
                 command=None,
             )
 
-        declaration = problem.lean_theorem_header.rstrip() + "\n" + proof
+        declaration = (
+            AUTO_IMPLICIT_OFF + problem.lean_theorem_header.rstrip() + "\n" + proof
+        )
         try:
             with _LEAN_LOCK:
                 base_env = self._base_env(problem.lean_imports)
