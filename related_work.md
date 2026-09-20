@@ -211,6 +211,79 @@ Wenjie Ma, Andrei Cojocaru, Neel Kolhe, Bradley Louie, Robin Said Sharif, Haihan
 
 ---
 
+## E 類　形式化本身的可靠性（不涉及批改，但決定路線可不可行）
+
+這一類不是批改研究，但它決定了「能不能把學生的作答形式化」這個問題的答案。
+
+### E1. Beyond Compilation　✔ 親自核
+
+Ke Zhang, Patricio Gallardo Candela, Sudhir Murthy, Yi Xie, Zhi Wang, Maziar Raissi／2026／arXiv:2606.31002
+
+標題：Beyond Compilation: Evaluating Faithful Natural-Language-to-Lean Statement Formalization
+
+abstract 原文：
+
+> On an independently audited random sample, it agrees with human majority on 89.7% of cases (Wilson 95% CI: 82.1--94.3%). Across eight systems evaluated on 400 graduate-level statements, every system has a nonzero compile–faithfulness gap, whose observed magnitude ranges from **3.0 to 29.0 percentage points**.
+
+| | |
+|---|---|
+| 規模 | 8 個系統、400 道研究所程度的陳述 |
+| compile–faithfulness gap | 每個系統都大於 0，範圍 **3.0 至 29.0 個百分點** |
+| 最佳系統（GPT-5.2 agent） | 編譯成功率 **89.5%**、語意忠實度 **60.5%**（差 29.0 個百分點） |
+
+**意義**：編譯過不代表意思對。編譯成功的裡面將近三分之一表達的不是原本的命題，而編譯器不會告訴你。這是本研究「不形式化學生作答」最有力的依據，也跟我們自己踩到的 `autoImplicit` 是同一回事。
+
+### E2. The Faithfulness Gap　✔ 親自核
+
+Noor Islam S. Mohammad, Tamim Sheikh／2026／arXiv:2606.16541
+
+標題：The Faithfulness Gap: Certifying Semantic Equivalence Between Natural-Language and Formal Mathematical Statements
+
+abstract 原文：
+
+> Autoformalization, translating natural-language mathematics into formal proof assistants, is bottlenecked not by translation fluency but by faithfulness: a formal statement can typecheck and be provable, yet still encode a different theorem than the source intended.
+
+方法為 Bidirectional Provability Fingerprinting (BPF)：
+
+| | |
+|---|---|
+| BPF 偵測率 | **89.6%** 的 drifted formalizations，false-positive **3.0%** |
+| 單靠 typecheck | 只抓到 **41.2%** |
+| LLM-judge baseline | **63.3%** |
+| 資料集 | 2,183 對 NL／Lean 4，**with controlled drift labels** |
+
+**重要限制**：那是**人工標註漂移**的資料集，不是真實 autoformalization 的輸出。89.6% 是在「已知哪些是錯的」的人造資料上測得的偵測率，與真實場景有距離。引用時必須帶上這個前提。
+
+### E3. Faithful Autoformalization via Roundtrip Verification and Repair　✔ 親自核
+
+Daneshvar Amrollahi, Jerry Lopez, Clark Barrett（Stanford）／2026／arXiv:2604.25031
+
+abstract 原文：
+
+> We propose a roundtrip verification approach which does not require ground-truth annotations: formalize a statement, translate the result back to natural language, re-formalize, and use a formal tool to check logical equivalence. When the two formalizations agree, this provides evidence of a faithful formalization.
+
+**領域是法律條文**：Texas Transportation Code 與 Texas Parks and Wildlife Code。模型為 Claude Opus 4.6 與 GPT-5.2。
+
+abstract 報的數字：未通過等價檢查的條文，NLI drift 高出 **1.4–2.5 倍**。
+
+**注意**：早期草稿曾引用「形式等價從 45–61% 提高到 83–85%」，該數字**在 abstract 查無出處**，已從簡報移除。若要引用內文數字，須自行讀全文確認。
+
+### E4. Hattori et al.（informalization）　△ 代查
+
+Seiji Hattori, Takuya Matsuzaki, Makoto Fujiwara／2025／arXiv:2509.09726
+
+標題：Natural Language Translation of Formal Proofs through Informalization of Proof Steps and Recursive Summarization along Proof Structure
+
+把 Lean proof 逐步 informalize，再沿證明結構遞迴摘要，產出可讀的自然語言證明。在兩個資料集測試：大學課本證明的形式化版本、既有的 Lean 證明庫。**abstract 無量化數字**，需讀全文。
+
+### 對本研究的意義
+
+**正向（自然語言 → Lean）的錯誤無法用編譯檢查出來。** round-trip 是目前主流的補救方式，但兩篇的證據都不在數學：一篇用人工標註漂移的資料集，一篇做法律條文。**數學領域目前沒有 round-trip 的數據。**
+
+**反向（Lean → 自然語言）風險低**，因為背後那份 proof 已經驗證過，翻得不精準只會讓說明變模糊，不會把對的講成錯的。本研究用反向把驗證過的參考答案轉成學生看得懂的說明。
+
+---
+
 ## 沒找到的方向（子代理明確回報「搜過沒有」）
 
 1. **用 Lean 批改數學系學生的紙筆作業／考試並給分數** —— 零篇。用了 6 種以上措辭搜過
@@ -314,5 +387,13 @@ UIUC 那篇有 9 位人類評分者，但報的是「人類與研究團隊標註
 3. **回饋有沒有指對地方** —— 要有助教標註的扣分位置，回到原本的門檻
 
 回饋跟驗證過的參考答案池很搭：可以告訴學生「這條路確實走得通」，或「你走的這條路在池子裡沒有，請檢查」——後者正好用到多份參考解的價值。
+
+**2026-09-20 的設計決定**：用反向（Lean → 自然語言）把驗證過的 proof 轉成學生看得懂的說明，作為回饋的內容。這條路繞過了一個原本無解的質疑——
+
+> 驗證過的參考答案不會自動變成對學生每一步的判斷力。
+
+該質疑針對的是**批改**：要給分數就得判斷學生寫的每一步，而參考答案的正確性幫不上那件事。但**回饋不需要判斷每一步**，它只要把正確的做法呈現給學生看，這時參考答案的正確性就是全部。E4（Hattori et al.）是這條路的技術先例，E 類結論說明了為什麼反向風險低。
+
+新增的評估問題：轉出來的中文學生看不看得懂、轉得對不對。這不能用誤扣率量，要用人類評分者評（Imperial AI TA 的做法）。
 
 要注意 UIUC 測出的接受度問題：「students still do not trust the AI autograders as much as they trust human graders」。
