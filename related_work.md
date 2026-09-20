@@ -268,13 +268,56 @@ abstract 報的數字：未通過等價檢查的條文，NLI drift 高出 **1.4�
 
 **注意**：早期草稿曾引用「形式等價從 45–61% 提高到 83–85%」，該數字**在 abstract 查無出處**，已從簡報移除。若要引用內文數字，須自行讀全文確認。
 
-### E4. Hattori et al.（informalization）　△ 代查
+### E4. Hattori et al.（informalization）　✔ 親自核（已讀全文）
 
 Seiji Hattori, Takuya Matsuzaki, Makoto Fujiwara／2025／arXiv:2509.09726
 
 標題：Natural Language Translation of Formal Proofs through Informalization of Proof Steps and Recursive Summarization along Proof Structure
 
-把 Lean proof 逐步 informalize，再沿證明結構遞迴摘要，產出可讀的自然語言證明。在兩個資料集測試：大學課本證明的形式化版本、既有的 Lean 證明庫。**abstract 無量化數字**，需讀全文。
+**本研究「反向產生學生回饋」這條路最接近的先例，而且領域重疊。**
+
+#### 方法：兩階段
+
+1. **逐步 informalize**　每個 tactic 轉成一句自然語言，用「模板 + LLM 填空」的混合法：模板依 tactic 類型準備（`rw` 改 goal 或改 hypothesis 用不同模板），LLM 填 `[theorems]`、`[assumptions]`、`[goalsBefore]`、`[goalsAfter]`；另有 premise library 存放定義與定理的預先說明
+2. **沿證明結構遞迴摘要**　以 `have` 產生的中間目標為子樹根建出依賴樹，由下而上逐層摘要
+
+#### 資料集
+
+| | |
+|---|---|
+| 資料集一 | 宮島靜雄《Calculus I - Calculus of one variable》第 1.1、1.2 節的 **17 個證明**，人工形式化並保持原證明結構。評估用 **38 個形式證明**（含 21 個 lemma） |
+| 資料集二 | Mathlib 中沒有對應自然語言證明的定理，論文給三個詳細例子 |
+
+**大學微積分課本的證明、人工形式化——與本研究的場景幾乎相同。**
+
+#### 評估與數字
+
+逐步 informalize，**1,242 個步驟**，人工專家評四個維度（accuracy、information sufficiency、necessity、appropriate translation），以 McNemar's test（α=0.05）檢定：
+
+| 正確 | 誤述 | 資訊不足 | 多餘 | 未翻譯 |
+|---|---|---|---|---|
+| **89.05%** | **5.15%** | 11.50% | 13.87% | 0.40% |
+
+摘要階段，17 個證明，平均每個設 **6.4 條評估標準**，分全對／部分／漏：
+
+| | 全對 | 部分 | 漏 | 分數 |
+|---|---|---|---|---|
+| 用遞迴摘要 | 87 | 11 | 10 | **0.857** |
+| 不用遞迴摘要 | 85 | 10 | 13 | 0.833 |
+
+#### 失敗模式（原文照抄）
+
+> Among the 17 outputs generated without recursive summarization, four included **reasoning not in the original proof** and/or contained **substantial logical inconsistencies**
+
+> Identifying all possible operations a tactic can perform and creating appropriate few-shot examples for them is **extremely time-consuming**
+
+另外：形式語言的表達式偶爾會直接輸出而未翻譯；證明太簡單時，會輸出人類認為瑣碎的細節。
+
+#### 對本研究的三個意涵
+
+1. **評估方法可以照用**：人工專家評四維度，加上每個證明設數條評估標準判全對／部分／漏。這比「找人打分算相關係數」具體，而且直接適用於「轉出來的中文對不對」
+2. **89% 不是零風險**：5.15% 誤述表示約每 20 個步驟有一個說錯。參考答案本身雖經驗證，轉成中文這一步仍會引入新的錯誤，論文必須寫明
+3. **不能只丟給 LLM 說「翻成中文」**：不用遞迴摘要時，17 個裡有 4 個憑空生出原證明沒有的推理。但模板要逐一 tactic 建立，成本很高——若想省掉模板只用 LLM，須先測品質掉多少
 
 ### 對本研究的意義
 
