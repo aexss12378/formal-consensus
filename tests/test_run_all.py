@@ -42,7 +42,7 @@ class RunAllTests(unittest.TestCase):
                 return_value=(Path("translations.json"), Path("translations.md")),
             ) as translate,
             mock.patch.object(
-                sys, "argv", ["run_all", "--config", "c", "--input", "i", *argv]
+                sys, "argv", ["run_all", "--input", "i", *argv]
             ),
             mock.patch("builtins.print"),
         ):
@@ -60,7 +60,7 @@ class RunAllTests(unittest.TestCase):
             self.assertTrue(run_dir.is_dir())
             for step in (review, select, report):
                 step.assert_called_once_with(run_dir)
-            translate.assert_called_once_with(run_dir, Path("c"))
+            translate.assert_called_once_with(run_dir, Path("config.json"))
             pipeline.lean_runner.close.assert_called_once()
 
     def test_failure_tells_user_how_to_resume(self) -> None:
@@ -68,7 +68,8 @@ class RunAllTests(unittest.TestCase):
             pipeline = self.fake_pipeline(Path(tmp))
             pipeline.run.side_effect = PipelineError("API 中斷")
             with self.assertRaises(SystemExit) as caught:
-                self.run_main(pipeline, ["--all"])
+                self.run_main(pipeline, [])
+            self.assertEqual(pipeline.run.call_args.args[0], ["p1", "p2"])
             run_dir = pipeline.run.call_args.args[1]
             self.assertIn(f"--run-dir {run_dir}", str(caught.exception.code))
             pipeline.lean_runner.close.assert_called_once()

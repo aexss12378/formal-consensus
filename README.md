@@ -131,25 +131,22 @@ uv run python -m formal_consensus.workflows.preflight \
 
 ### 一次跑完（建議）
 
-`run_all` 依序執行候選產生、方法審查、代表解選擇、報告與教學步驟翻譯五步：
+一條指令依序執行候選產生、方法審查、代表解選擇、報告與教學步驟翻譯五步：
 
 ```bash
-uv run python -m formal_consensus.workflows.run_all \
-  --config config.json \
-  --input examples/midterm.json \
-  --unit midterm_q4_piecewise_continuity
+uv run python -m formal_consensus --input examples/midterm.json
 ```
 
-把 `--unit 題號` 換成 `--all`，就會依輸入順序跑全部題目。
+預設跑題庫裡的全部題目、讀 `config.json`。只跑一題時加上 `--unit 題號`；要用別的設定檔時加上 `--config 路徑`：
+
+```bash
+uv run python -m formal_consensus --input examples/midterm.json --unit midterm_q4_piecewise_continuity
+```
 
 程式一開始就會印出批次資料夾路徑。任何一步失敗時，錯誤訊息會附上續跑方式，只要在原指令後面加上 `--run-dir`：
 
 ```bash
-uv run python -m formal_consensus.workflows.run_all \
-  --config config.json \
-  --input examples/midterm.json \
-  --unit midterm_q4_piecewise_continuity \
-  --run-dir runs/既有批次資料夾
+uv run python -m formal_consensus --input examples/midterm.json --run-dir runs/既有批次資料夾
 ```
 
 五步都會沿用已保存的結果：已完成的題目不會重跑，已完成的單模型回覆、方法審查票、代表解選擇票與翻譯都不會再次呼叫模型。設定、題目或分類內容若與批次內凍結的 JSON 不同，系統會拒絕續跑。

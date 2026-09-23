@@ -16,12 +16,12 @@ from .translate import run_translation
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, required=True)
+    parser = argparse.ArgumentParser(prog="python -m formal_consensus", description=__doc__)
+    parser.add_argument(
+        "--config", type=Path, default=Path("config.json"), help="預設 config.json"
+    )
     parser.add_argument("--input", type=Path, required=True)
-    selection = parser.add_mutually_exclusive_group(required=True)
-    selection.add_argument("--unit", help="只執行指定 problem_id")
-    selection.add_argument("--all", action="store_true", help="依輸入順序執行全部題目")
+    parser.add_argument("--unit", help="只執行指定 problem_id；省略時依輸入順序執行全部題目")
     parser.add_argument(
         "--run-dir",
         type=Path,
@@ -38,7 +38,7 @@ def main() -> None:
         raise SystemExit(f"設定或題目讀取失敗：{exc}") from exc
     if args.unit is not None and args.unit not in pipeline.problems:
         raise SystemExit(f"題庫沒有 problem_id：{args.unit}")
-    problem_ids = list(pipeline.problems) if args.all else [args.unit]
+    problem_ids = list(pipeline.problems) if args.unit is None else [args.unit]
 
     # 先建好資料夾並印出路徑，中途失敗時使用者才知道要續跑哪個批次。
     run_dir = (
