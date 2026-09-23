@@ -23,6 +23,13 @@
       "max_completion_tokens": 8000
     }
   ],
+  "translation_model": {
+    "name": "translator",
+    "model_id": "glm-5.3-flash",
+    "api": "ollama",
+    "temperature": 0.2,
+    "max_completion_tokens": 8000
+  },
   "max_rounds": 3,
   "max_candidates_per_agent_per_round": 5,
   "max_searches_per_agent_per_round": 40,

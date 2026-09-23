@@ -28,7 +28,7 @@
 
 1. 系統在輪次開始時複製一份共享池快照。
 2. 三個模型平行收到完全相同的快照；同輪模型看不到彼此的新提交。
-3. 模型可私下呼叫 `lean_check`，送出的可以是用 `exact?`、`apply?`、`simp?`、`rw?`、`aesop?` 或 `library_search` 的不完整探測，也可以是想先確認的完整 proof，送進去的內容一律不入池；`lean_submit` 是提交動作，驗證成功後會立刻把該 proof 存成本輪候選且無法撤回，模型沒有其他候選時呼叫 `stop`。工具不另設個別呼叫上限。
+3. 模型可私下呼叫 `lean_check`，送出的可以是用 `exact?`、`apply?`、`simp?`、`rw?`、`aesop?` 或 `library_search` 的不完整探測，也可以是想先確認的完整 proof，送進去的內容一律不入池；`lean_submit` 是提交動作，驗證成功後會立刻把該 proof 存成本輪候選且無法撤回，模型沒有其他候選時呼叫 `stop`。每個模型每輪的工具使用有三個上限：`lean_check` 最多 `max_searches_per_agent_per_round` 次（預設 40），用完即結束該模型本輪；成功的 `lean_submit` 最多 `max_candidates_per_agent_per_round` 份（預設 5）；連續 3 次送出完全相同的 `lean_check` 也會結束該模型本輪。三種情況下，本輪已通過驗證的候選都會保留。
 4. 後端依 `config.json` 的固定模型順序，重新驗證每一份候選。
 5. 只有唯一且通過驗證的候選會取得匿名流水號並加入下一輪共享池。
 6. 只要本輪有新的有效候選入池，就會再開一輪，讓三個模型都看到更新後的共享池；沒有新增有效候選或到達輪次上限時才結束。模型的 `stop` 只代表它對當前快照已無其他貢獻，不能阻止新入池內容被下一輪看見。
@@ -102,7 +102,7 @@ source .env
 
 正式執行前，必須先確認 `config.json` 內三個模型的精確型號仍可使用，並凍結設定。
 
-系統仍支援 OpenRouter 與 Ollama 兩種 API，每個模型用 `api` 欄位指定其中一個；目前的 `config.json` 則全部固定走 Ollama Cloud：[`deepseek-v4-flash:0731`](https://ollama.com/library/deepseek-v4-flash:0731-cloud)、[`qwen3.5:397b`](https://ollama.com/library/qwen3.5:397b-cloud) 與 [`gemma4:31b`](https://ollama.com/library/gemma4:31b-cloud)。這些是直連 `https://ollama.com/v1/chat/completions` 使用的模型識別碼，因此不加 `-cloud`。指定 API 或模型不可用時，該模型呼叫會明確失敗，不會靜默改走另一個 API。每個 API 回覆紀錄仍會保存實際回傳的模型與供應端欄位，供事後稽核。
+系統仍支援 OpenRouter 與 Ollama 兩種 API，每個模型用 `api` 欄位指定其中一個；目前的 `config.json` 則全部固定走 Ollama Cloud：[`deepseek-v4-flash:0731`](https://ollama.com/library/deepseek-v4-flash:0731-cloud)、[`qwen3.5:397b`](https://ollama.com/library/qwen3.5:397b-cloud) 與 [`gemma4:31b`](https://ollama.com/library/gemma4:31b-cloud)。這些是直連 `https://ollama.com/v1/chat/completions` 使用的模型識別碼，因此不加 `-cloud`。教學步驟翻譯另用 `translation_model` 指定的模型，目前是 `glm-5.3-flash`，刻意不用產生 proof 的三個模型。指定 API 或模型不可用時，該模型呼叫會明確失敗，不會靜默改走另一個 API。每個 API 回覆紀錄仍會保存實際回傳的模型與供應端欄位，供事後稽核。
 
 ## 輸入格式
 
@@ -129,47 +129,62 @@ uv run python -m formal_consensus.workflows.preflight \
   --problem demo_derivative_square
 ```
 
-先跑單題：
+### 一次跑完（建議）
+
+`run_all` 依序執行候選產生、方法審查、代表解選擇、報告與教學步驟翻譯五步：
 
 ```bash
-uv run python -m formal_consensus.workflows.pipeline \
+uv run python -m formal_consensus.workflows.run_all \
   --config config.json \
-  --input examples/problems.json \
-  --unit demo_addition
+  --input examples/midterm.json \
+  --unit midterm_q4_piecewise_continuity
 ```
 
-程式會輸出新批次資料夾。若 API 或工具中斷，可用相同設定、輸入與批次資料夾續跑：
+把 `--unit 題號` 換成 `--all`，就會依輸入順序跑全部題目。
+
+程式一開始就會印出批次資料夾路徑。任何一步失敗時，錯誤訊息會附上續跑方式，只要在原指令後面加上 `--run-dir`：
 
 ```bash
-uv run python -m formal_consensus.workflows.pipeline \
+uv run python -m formal_consensus.workflows.run_all \
   --config config.json \
-  --input examples/problems.json \
-  --unit demo_addition \
+  --input examples/midterm.json \
+  --unit midterm_q4_piecewise_continuity \
   --run-dir runs/既有批次資料夾
 ```
 
-已完成的單模型回覆會立即保存；續跑不會再次呼叫該模型。設定、題目或分類內容若與批次內凍結的 JSON 不同，系統會拒絕續跑。
+五步都會沿用已保存的結果：已完成的題目不會重跑，已完成的單模型回覆、方法審查票、代表解選擇票與翻譯都不會再次呼叫模型。設定、題目或分類內容若與批次內凍結的 JSON 不同，系統會拒絕續跑。
 
-執行全部題目：
+### 分步執行
+
+需要單獨重跑某一步時，五步也可以分開執行。候選產生：
 
 ```bash
 uv run python -m formal_consensus.workflows.pipeline \
   --config config.json \
-  --input examples/problems.json \
-  --all
+  --input examples/midterm.json \
+  --unit midterm_q4_piecewise_continuity
 ```
 
-候選產生完成後，再執行方法審查、代表證明選擇與報告：
+它會輸出新批次資料夾，同樣可以加上 `--run-dir` 續跑。候選產生完成後，再執行方法審查、代表解選擇、報告與翻譯：
 
 ```bash
 uv run python -m formal_consensus.workflows.method_review --run-dir runs/批次資料夾
 uv run python -m formal_consensus.workflows.representative_selection --run-dir runs/批次資料夾
 uv run python -m formal_consensus.workflows.report --run-dir runs/批次資料夾
+uv run python -m formal_consensus.workflows.translate --config config.json --run-dir runs/批次資料夾
 ```
 
-方法審查只判定模型宣稱的主要方法是否符合已驗證 proof；它不重新投票決定數學真偽。每一方法若有多份候選，代表解選擇會匿名顯示 proof；三票中至少兩票相同才自動選出，三方各選一份時標記為 `needs_human_selection`。
+翻譯的模型讀自 `--config` 指定的設定檔，不讀批次內凍結的設定，所以舊批次也能補翻。
+
+### 各步做什麼
+
+方法審查只判定模型宣稱的主要方法是否符合已驗證 proof；它不重新投票決定數學真偽。三個模型各投一票，`pass` 至少兩票為 `confirmed`、`fail` 至少兩票為 `rejected`，其餘為 `unresolved`。
+
+代表解選擇只看 `confirmed` 的 proof，每個方法選一份。該方法只有一份時直接標為 `selected_singleton`；有多份時匿名顯示 proof，三票中至少兩票相同才自動選出（`selected_by_majority`），三方各選一份時標記為 `needs_human_selection`。
 
 報告會列出每輪開始前的共享池筆數，以及三個模型第一個 API 請求實際回報的 prompt token。這些數字是後續判斷完整 `list` 是否開始逼近脈絡上限的依據，不會在主實驗中自動觸發截斷或改變排序。
+
+教學步驟翻譯把每個方法選出的代表 proof 交給 `translation_model`，寫成學生能在考卷上照著寫的英文編號步驟，不提 Lean、Mathlib 或 tactic；步驟中出現這些字時會退回要求重寫。`needs_human_selection` 的方法沒有代表解，不會翻譯。翻譯沒有經過驗證，只由提示詞要求沿用原 proof 的論證，使用前應人工檢查。
 
 ## 主要輸出
 
@@ -179,12 +194,22 @@ runs/批次資料夾/
 ├── input.json                   # 凍結題目
 ├── taxonomy.json                # 凍結方法分類
 ├── run_state.json
+├── method_review_summary.json   # 全部題目的方法審查結果
+├── representatives.json         # 每題每個方法的代表解
+├── report.json                  # 報告（機器讀取用）
+├── report.md                    # 報告（人閱讀用）
+├── translations.json            # 每題每個方法的教學步驟解法
+├── translations.md              # 同上，人閱讀用
 └── problems/題號/
     ├── state.json               # 內部完整狀態
     ├── candidates.json          # 所有已處理提交與狀態
     ├── failures.json            # 證明輸出失敗，不含 API／Lean 工具故障
     ├── pool_after_round_*.json  # 下一輪真正可見的匿名內容
-    └── rounds/round_*/          # 凍結快照、私有搜尋／驗證紀錄、原始工具回覆與後端重驗結果
+    ├── rounds/round_*/          # 凍結快照、私有搜尋／驗證紀錄、原始工具回覆與後端重驗結果
+    ├── method_reviews/          # 每份 proof 每個模型的方法審查票
+    ├── method_review_summary.json
+    ├── selection_votes/         # 代表解選擇票
+    └── translations/模型/       # 每個代表解的翻譯與原始 API 回覆；換翻譯模型時舊結果保留
 ```
 
 ## 測試
@@ -199,7 +224,7 @@ PYTHONDONTWRITEBYTECODE=1 uv run python -m unittest discover -s tests -v
 
 Lean 通過只代表固定 Lean 命題具有一份通過檢查的證明。它不會自動確認自然語言題目與 Lean 命題完全相同，也不會自動確認證明所屬的教學方法。方法審查是多模型盲審結果，必須與形式驗證結果分開報告。
 
-本實驗評估的是「固定模型加上相同 Lean 工具」形成的代理系統，而不是模型不使用工具時的純記憶能力。三個模型取得相同的檢查與提交介面；每個代理持續使用工具，成功的 `lean_submit` 會自動暫存候選，直到代理自行呼叫 `stop`。系統不另設每輪 turn 或 Lean 工具呼叫上限。搜尋內容屬於單一代理的私有推理過程，不構成代理間的自然語言溝通。
+本實驗評估的是「固定模型加上相同 Lean 工具」形成的代理系統，而不是模型不使用工具時的純記憶能力。三個模型取得相同的檢查與提交介面；每個代理持續使用工具，成功的 `lean_submit` 會自動暫存候選，直到代理自行呼叫 `stop` 或碰到上方「每輪實際流程」列出的上限。系統不另設每輪 turn 上限。搜尋內容屬於單一代理的私有推理過程，不構成代理間的自然語言溝通。
 
 `statement_fidelity_status=unresolved` 的題目可以用來除錯或探索，但不應混入主結果宣稱「解對原題」；主分析應事先限定為 `confirmed` 或本來就以形式命題定義的 `formal_benchmark`。另外，方法盲審隱藏了候選作者，但仍由同一組三個模型評審，其中可能包含原產生模型，因此它是操作性分組機制，不是獨立人工 ground truth。
 

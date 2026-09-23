@@ -69,6 +69,8 @@ class ExperimentConfig:
     taxonomy_path: Path
     source_path: Path
     repl_path: Path | None = None
+    # 翻譯不影響候選產生，所以不放進 to_dict 凍結；翻譯輸出自己記錄模型。
+    translation_model: ModelConfig | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -136,6 +138,78 @@ def _resolve_optional_path(base: Path, raw: Any, field: str) -> Path | None:
     return _resolve_path(base, raw, field)
 
 
+def _parse_model(
+    row_value: Any, field: str, apis: dict[str, ApiConfig]
+) -> ModelConfig:
+    row = _require_mapping(row_value, field)
+    api_name = _require_string(
+        row.get("api", "openrouter"), f"{field}.api"
+    )
+    if api_name not in apis:
+        raise ConfigError(
+            f"{field}.api 指定不存在的 API：{api_name}"
+        )
+    routing = _require_mapping(
+        row.get("provider_routing", {}),
+        f"{field}.provider_routing",
+    )
+    order_raw = routing.get("order", [])
+    if not isinstance(order_raw, list) or any(
+        not isinstance(item, str) or not item.strip() for item in order_raw
+    ):
+        raise ConfigError(
+            f"{field}.provider_routing.order 必須是字串陣列"
+        )
+    allow_fallbacks = routing.get("allow_fallbacks", True)
+    require_parameters = routing.get("require_parameters", True)
+    if not isinstance(allow_fallbacks, bool):
+        raise ConfigError(
+            f"{field}.provider_routing.allow_fallbacks 必須是 boolean"
+        )
+    if not isinstance(require_parameters, bool):
+        raise ConfigError(
+            f"{field}.provider_routing.require_parameters 必須是 boolean"
+        )
+    normalized_order = tuple(item.strip() for item in order_raw)
+    if len(set(normalized_order)) != len(normalized_order):
+        raise ConfigError(
+            f"{field}.provider_routing.order 不得重複"
+        )
+    if (
+        apis[api_name].kind == "openrouter"
+        and not allow_fallbacks
+        and not normalized_order
+    ):
+        raise ConfigError(
+            f"{field} 關閉 provider fallback 時必須明列 order"
+        )
+    if apis[api_name].kind == "ollama" and normalized_order:
+        raise ConfigError(
+            f"{field} 使用 Ollama 時不得設定 provider_routing.order"
+        )
+    temperature = row.get("temperature")
+    if temperature is not None and (
+        isinstance(temperature, bool)
+        or not isinstance(temperature, (int, float))
+    ):
+        raise ConfigError(f"{field}.temperature 必須是數字或 null")
+    return ModelConfig(
+        name=_require_string(row.get("name"), f"{field}.name"),
+        model_id=_require_string(
+            row.get("model_id"), f"{field}.model_id"
+        ),
+        temperature=(float(temperature) if temperature is not None else None),
+        max_completion_tokens=_require_positive_int(
+            row.get("max_completion_tokens"),
+            f"{field}.max_completion_tokens",
+        ),
+        provider_order=normalized_order,
+        allow_provider_fallbacks=allow_fallbacks,
+        require_parameters=require_parameters,
+        api=api_name,
+    )
+
+
 def load_config(path: str | Path) -> ExperimentConfig:
     source_path = Path(path).expanduser().resolve()
     raw = _require_mapping(read_json(source_path), "config")
@@ -189,77 +263,10 @@ def load_config(path: str | Path) -> ExperimentConfig:
     if not isinstance(model_rows, list) or len(model_rows) != 3:
         raise ConfigError("models 必須剛好包含三個模型")
 
-    models: list[ModelConfig] = []
-    for index, row_value in enumerate(model_rows):
-        row = _require_mapping(row_value, f"models[{index}]")
-        api_name = _require_string(
-            row.get("api", "openrouter"), f"models[{index}].api"
-        )
-        if api_name not in apis:
-            raise ConfigError(
-                f"models[{index}].api 指定不存在的 API：{api_name}"
-            )
-        routing = _require_mapping(
-            row.get("provider_routing", {}),
-            f"models[{index}].provider_routing",
-        )
-        order_raw = routing.get("order", [])
-        if not isinstance(order_raw, list) or any(
-            not isinstance(item, str) or not item.strip() for item in order_raw
-        ):
-            raise ConfigError(
-                f"models[{index}].provider_routing.order 必須是字串陣列"
-            )
-        allow_fallbacks = routing.get("allow_fallbacks", True)
-        require_parameters = routing.get("require_parameters", True)
-        if not isinstance(allow_fallbacks, bool):
-            raise ConfigError(
-                f"models[{index}].provider_routing.allow_fallbacks 必須是 boolean"
-            )
-        if not isinstance(require_parameters, bool):
-            raise ConfigError(
-                f"models[{index}].provider_routing.require_parameters 必須是 boolean"
-            )
-        normalized_order = tuple(item.strip() for item in order_raw)
-        if len(set(normalized_order)) != len(normalized_order):
-            raise ConfigError(
-                f"models[{index}].provider_routing.order 不得重複"
-            )
-        if (
-            apis[api_name].kind == "openrouter"
-            and not allow_fallbacks
-            and not normalized_order
-        ):
-            raise ConfigError(
-                f"models[{index}] 關閉 provider fallback 時必須明列 order"
-            )
-        if apis[api_name].kind == "ollama" and normalized_order:
-            raise ConfigError(
-                f"models[{index}] 使用 Ollama 時不得設定 provider_routing.order"
-            )
-        temperature = row.get("temperature")
-        if temperature is not None and (
-            isinstance(temperature, bool)
-            or not isinstance(temperature, (int, float))
-        ):
-            raise ConfigError(f"models[{index}].temperature 必須是數字或 null")
-        models.append(
-            ModelConfig(
-                name=_require_string(row.get("name"), f"models[{index}].name"),
-                model_id=_require_string(
-                    row.get("model_id"), f"models[{index}].model_id"
-                ),
-                temperature=(float(temperature) if temperature is not None else None),
-                max_completion_tokens=_require_positive_int(
-                    row.get("max_completion_tokens"),
-                    f"models[{index}].max_completion_tokens",
-                ),
-                provider_order=normalized_order,
-                allow_provider_fallbacks=allow_fallbacks,
-                require_parameters=require_parameters,
-                api=api_name,
-            )
-        )
+    models = [
+        _parse_model(row_value, f"models[{index}]", apis)
+        for index, row_value in enumerate(model_rows)
+    ]
 
     names = [model.name for model in models]
     model_ids = [model.model_id for model in models]
@@ -300,6 +307,11 @@ def load_config(path: str | Path) -> ExperimentConfig:
         ),
         source_path=source_path,
         repl_path=_resolve_optional_path(base, raw.get("repl_path"), "repl_path"),
+        translation_model=(
+            _parse_model(raw["translation_model"], "translation_model", apis)
+            if raw.get("translation_model") is not None
+            else None
+        ),
     )
 
 

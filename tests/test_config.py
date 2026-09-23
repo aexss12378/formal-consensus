@@ -88,6 +88,29 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(all(model.api == "openrouter" for model in config.models))
         self.assertEqual(set(config.apis), {"openrouter"})
 
+    def test_translation_model_is_parsed_but_not_frozen(self) -> None:
+        raw = base_config()
+        raw["translation_model"] = {
+            "name": "translator",
+            "model_id": "glm/model",
+            "api": "ollama",
+            "temperature": 0.2,
+            "max_completion_tokens": 100,
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "config.json"
+            path.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+            config = load_config(path)
+            path.write_text(
+                json.dumps(base_config(), ensure_ascii=False), encoding="utf-8"
+            )
+            without = load_config(path)
+
+        self.assertEqual(config.translation_model.model_id, "glm/model")
+        self.assertIsNone(without.translation_model)
+        # 加上翻譯模型不能讓既有批次的凍結設定比對失敗。
+        self.assertEqual(config.to_dict(), without.to_dict())
+
 
 if __name__ == "__main__":
     unittest.main()

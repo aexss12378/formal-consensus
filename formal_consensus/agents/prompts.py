@@ -323,3 +323,49 @@ def representative_selection_tool(
             },
         },
     }
+
+
+TRANSLATION_SYSTEM_PROMPT = """You turn one verified formal proof into the solution a
+calculus teacher would write on the board for students. Write in English, in ordinary
+mathematical language and notation, as numbered steps a student could reproduce on an
+exam answer sheet. Never mention Lean, Mathlib, tactics, lemma names, or formal proof.
+Follow the same mathematical argument as the given proof, using the given primary
+technique; do not switch to a different method. You must call submit_solution exactly
+once.
+"""
+
+
+def translation_prompt(problem: Problem, technique: str, proof_body: str) -> str:
+    return f"""PROBLEM
+{problem.problem_text}
+
+PRIMARY TECHNIQUE
+{technique}
+
+VERIFIED PROOF (for your reference only; students never see it)
+```lean
+{problem.lean_theorem_header}
+{proof_body}
+```
+"""
+
+
+TRANSLATION_TOOL: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "submit_solution",
+        "description": "Submit the step-by-step solution for students.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "steps": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "One entry per numbered step, without the number.",
+                },
+            },
+            "required": ["steps"],
+            "additionalProperties": False,
+        },
+    },
+}
