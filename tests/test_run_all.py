@@ -13,9 +13,18 @@ from formal_consensus.workflows.pipeline import PipelineError
 
 class RunAllTests(unittest.TestCase):
     def fake_pipeline(self, runs_dir: Path):
+        problems = {"p1": object(), "p2": object()}
+
+        def select_problems(problem_ids):
+            # 與真實 pipeline 相同：題號不存在或命題未確認時拋出 PipelineError。
+            for problem_id in problem_ids:
+                if problem_id not in problems:
+                    raise PipelineError(f"題庫沒有 problem_id：{problem_id}")
+
         return SimpleNamespace(
-            problems={"p1": object(), "p2": object()},
+            problems=problems,
             config=SimpleNamespace(runs_dir=runs_dir),
+            select_problems=select_problems,
             run=mock.Mock(),
             lean_runner=mock.Mock(),
         )

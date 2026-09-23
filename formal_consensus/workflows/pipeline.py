@@ -58,7 +58,7 @@ class ConsensusPipeline:
                 f"預期 {configured_names}，實際 {agent_names}"
             )
 
-    def run(self, problem_ids: Sequence[str], run_dir: Path | None = None) -> Path:
+    def select_problems(self, problem_ids: Sequence[str]) -> list[Problem]:
         selected: list[Problem] = []
         for problem_id in problem_ids:
             if problem_id not in self.problems:
@@ -73,6 +73,21 @@ class ConsensusPipeline:
             selected.append(problem)
         if not selected:
             raise PipelineError("至少要選一題")
+        # 系統起草的命題必須經人確認才能證明：命題寫錯時 Lean 照樣會通過。
+        unconfirmed = [
+            problem.problem_id
+            for problem in selected
+            if problem.statement_fidelity_status == "unresolved"
+        ]
+        if unconfirmed:
+            raise PipelineError(
+                f"以下題目的 Lean 命題尚未經人確認：{unconfirmed}。"
+                "請比對命題與原題，一致後把 statement_fidelity_status 改成 confirmed"
+            )
+        return selected
+
+    def run(self, problem_ids: Sequence[str], run_dir: Path | None = None) -> Path:
+        selected = self.select_problems(problem_ids)
 
         target = (
             run_dir.expanduser().resolve()

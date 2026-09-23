@@ -36,9 +36,12 @@ def main() -> None:
         pipeline = build_pipeline(args.config, args.input)
     except (SchemaError, ValueError, OSError, json.JSONDecodeError) as exc:
         raise SystemExit(f"設定或題目讀取失敗：{exc}") from exc
-    if args.unit is not None and args.unit not in pipeline.problems:
-        raise SystemExit(f"題庫沒有 problem_id：{args.unit}")
     problem_ids = list(pipeline.problems) if args.unit is None else [args.unit]
+    # 建資料夾前先檢查題號與命題確認狀態，被擋下時不留空的批次資料夾。
+    try:
+        pipeline.select_problems(problem_ids)
+    except PipelineError as exc:
+        raise SystemExit(str(exc)) from exc
 
     # 先建好資料夾並印出路徑，中途失敗時使用者才知道要續跑哪個批次。
     run_dir = (

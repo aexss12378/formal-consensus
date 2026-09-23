@@ -454,6 +454,24 @@ class ReplLeanRunner:
             diagnostics=diagnostics,
         )
 
+    def check_statement(self, problem: Problem) -> str | None:
+        """只檢查命題能否編譯，proof 以 sorry 佔位；通過回傳 None，否則回傳錯誤。"""
+        declaration = (
+            AUTO_IMPLICIT_OFF + problem.lean_theorem_header.rstrip() + "\n  by sorry"
+        )
+        with _LEAN_LOCK:
+            base_env = self._base_env(problem.lean_imports)
+            response = self._request({"cmd": declaration, "env": base_env})
+        response_error = self._response_error(response)
+        if response_error is not None:
+            raise ReplError(response_error)
+        errors = [
+            message["data"]
+            for message in response.get("messages", [])
+            if message.get("severity") == "error"
+        ]
+        return "\n".join(errors) if errors else None
+
     def close(self) -> None:
         process = self._process
         self._process = None
@@ -505,6 +523,12 @@ class LeanRunner:
         check_id: str,
     ) -> LeanCheckResult:
         return self._backend.check(problem, proof_body, check_id)
+
+    def check_statement(self, problem: Problem) -> str | None:
+        # lake build 後端依 lakefile.toml 以 -E hasSorry 執行，無法用 sorry 佔位只檢查命題。
+        if not isinstance(self._backend, ReplLeanRunner):
+            raise ReplError("命題檢查需要在 config.json 設定 repl_path")
+        return self._backend.check_statement(problem)
 
     def close(self) -> None:
         close = getattr(self._backend, "close", None)

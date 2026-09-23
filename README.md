@@ -2,7 +2,7 @@
 
 本專案實作三個固定模型的同步共享池實驗。模型彼此不直接對話；每輪開始時，系統把先前所有通過 Lean 驗證的完整證明，以固定加入順序放進三個模型的上下文。
 
-本系統只處理候選證明產生，不處理學生作答或學生批改。
+老師用自然語言出題；系統把題目起草成 Lean 命題，**經人確認後**才產生證明、選出每個方法的代表解，並翻成學生看得懂的教學步驟。本系統不處理學生作答或學生批改。
 
 ## 第一版規則
 
@@ -102,18 +102,52 @@ source .env
 
 正式執行前，必須先確認 `config.json` 內三個模型的精確型號仍可使用，並凍結設定。
 
-系統仍支援 OpenRouter 與 Ollama 兩種 API，每個模型用 `api` 欄位指定其中一個；目前的 `config.json` 則全部固定走 Ollama Cloud：[`deepseek-v4-flash:0731`](https://ollama.com/library/deepseek-v4-flash:0731-cloud)、[`qwen3.5:397b`](https://ollama.com/library/qwen3.5:397b-cloud) 與 [`gemma4:31b`](https://ollama.com/library/gemma4:31b-cloud)。這些是直連 `https://ollama.com/v1/chat/completions` 使用的模型識別碼，因此不加 `-cloud`。教學步驟翻譯另用 `translation_model` 指定的模型，目前是 `glm-5.3-flash`，刻意不用產生 proof 的三個模型。指定 API 或模型不可用時，該模型呼叫會明確失敗，不會靜默改走另一個 API。每個 API 回覆紀錄仍會保存實際回傳的模型與供應端欄位，供事後稽核。
+系統仍支援 OpenRouter 與 Ollama 兩種 API，每個模型用 `api` 欄位指定其中一個；目前的 `config.json` 則全部固定走 Ollama Cloud：[`deepseek-v4-flash:0731`](https://ollama.com/library/deepseek-v4-flash:0731-cloud)、[`qwen3.5:397b`](https://ollama.com/library/qwen3.5:397b-cloud) 與 [`gemma4:31b`](https://ollama.com/library/gemma4:31b-cloud)。這些是直連 `https://ollama.com/v1/chat/completions` 使用的模型識別碼，因此不加 `-cloud`。起草 Lean 命題與教學步驟翻譯另用 `translation_model` 指定的模型，目前是 `glm-5.3-flash`，刻意不用產生 proof 的三個模型。指定 API 或模型不可用時，該模型呼叫會明確失敗，不會靜默改走另一個 API。每個 API 回覆紀錄仍會保存實際回傳的模型與供應端欄位，供事後稽核。
 
-## 輸入格式
+## 從老師的題目開始
 
-見 `examples/problems.json`。每題必須提供：
+老師只需要寫 `problem_id` 與 `problem_text`，格式見 `examples/teacher_exam.json`。
+
+**1. 起草 Lean 命題**
+
+```bash
+uv run python -m formal_consensus formalize --input examples/teacher_exam.json
+```
+
+系統逐題請 `translation_model` 寫出 Lean 命題，先用 Lean 檢查能否編譯；不能編譯時把錯誤交回模型重寫，最多嘗試三次。接著另外呼叫一次模型，**只給 Lean 命題、不給原題**，說明這個命題實際在說什麼。給了原題的話，模型只會複述原意，看不出命題寫錯的地方。
+
+題目檔旁會產生三個檔案：
+
+- `<檔名>.draft.json`：題庫草稿，每題的 `statement_fidelity_status` 都是 `unresolved`
+- `<檔名>.draft.review.md`：確認說明，逐題並排原題、Lean 命題與說明
+- `<檔名>.draft.records.json`：原始 API 回覆
+
+草稿已存在時系統會拒絕執行，避免蓋掉人工修改。命題檢查需要常駐 REPL（`config.json` 的 `repl_path`）。
+
+**2. 人工確認**
+
+老師或助教照確認說明逐題比對，一致的題目把草稿裡的 `statement_fidelity_status` 改成 `confirmed`，不一致就修改 `lean_theorem_header` 或刪掉該題。不會 Lean 的人，可以把確認說明裡的每一題整段貼給慣用的 AI 協助比對。手動修改過的 `lean_theorem_header` 不會重新檢查能否編譯，寫錯的話要到證明階段才會發現。
+
+**3. 產生證明與教學步驟**
+
+```bash
+uv run python -m formal_consensus --input examples/teacher_exam.draft.json
+```
+
+只要有任何一題仍是 `unresolved`，系統就拒絕執行並列出這些題號，也不會建立批次資料夾。只想先跑已確認的題目時，用 `--unit` 指定。
+
+**為什麼一定要人確認**：命題寫錯時 Lean 照樣會通過，後面的證明、代表解與教學步驟都會建立在錯的題目上，而且每一步看起來都正常。Lean 只擋得下「命題無法編譯」，擋不下「命題的意思跟原題不同」。
+
+## 題庫格式
+
+見 `examples/midterm.json`；起草產生的草稿也是這個格式。每題必須提供：
 
 - `problem_id`
 - `problem_text`
 - `lean_imports`
 - `lean_theorem_header`，結尾必須是 `:=`
 - `taxonomy_version`
-- `statement_fidelity_status`
+- `statement_fidelity_status`：`confirmed`（人確認過與原題一致）、`formal_benchmark`（題目本來就是形式命題）或 `unresolved`（尚未確認，系統拒絕執行）
 
 模型只產生 proof body，不能修改 theorem header。
 
@@ -223,6 +257,6 @@ Lean 通過只代表固定 Lean 命題具有一份通過檢查的證明。它不
 
 本實驗評估的是「固定模型加上相同 Lean 工具」形成的代理系統，而不是模型不使用工具時的純記憶能力。三個模型取得相同的檢查與提交介面；每個代理持續使用工具，成功的 `lean_submit` 會自動暫存候選，直到代理自行呼叫 `stop` 或碰到上方「每輪實際流程」列出的上限。系統不另設每輪 turn 上限。搜尋內容屬於單一代理的私有推理過程，不構成代理間的自然語言溝通。
 
-`statement_fidelity_status=unresolved` 的題目可以用來除錯或探索，但不應混入主結果宣稱「解對原題」；主分析應事先限定為 `confirmed` 或本來就以形式命題定義的 `formal_benchmark`。另外，方法盲審隱藏了候選作者，但仍由同一組三個模型評審，其中可能包含原產生模型，因此它是操作性分組機制，不是獨立人工 ground truth。
+`statement_fidelity_status=unresolved` 的題目會被系統拒絕執行；只有 `confirmed` 與本來就以形式命題定義的 `formal_benchmark` 能進入證明。`confirmed` 代表有人比對過，不代表命題一定正確。另外，方法盲審隱藏了候選作者，但仍由同一組三個模型評審，其中可能包含原產生模型，因此它是操作性分組機制，不是獨立人工 ground truth。
 
 第一版把共享池完整 `list` 按加入順序放進上下文。這是刻意保持簡單的實驗條件，不代表已解決長脈絡中的前段偏誤、後段偏誤或「中間資訊較容易被忽略」問題。正式實驗前應先用小規模題目記錄每輪共享池長度與輸入 token；若池子經常逼近模型上限，必須另立排序或擷取條件，不能在主實驗中臨時改規則。

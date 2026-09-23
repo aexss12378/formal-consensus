@@ -369,3 +369,80 @@ TRANSLATION_TOOL: dict[str, Any] = {
         },
     },
 }
+
+
+FORMALIZATION_SYSTEM_PROMPT = """You write the Lean 4 + Mathlib theorem statement for one
+calculus problem written by a teacher. A person will check your statement against the
+problem before anyone tries to prove it, so faithfulness matters more than anything else.
+
+Rules:
+- Output only the theorem header: it starts with `theorem`, ends with `:=`, and has no
+  proof. `import Mathlib` is already provided; do not add imports, definitions, or
+  other declarations.
+- State exactly what the problem asks to prove. Do not weaken, strengthen, or add
+  hypotheses. Keep every quantifier, domain, and condition of the problem.
+- Use real numbers (ℝ) unless the problem says otherwise.
+- Remember Lean's conventions differ from textbook math: x / 0 = 0 and Real.sqrt of a
+  negative number is 0. Write the statement so these conventions cannot change its
+  meaning.
+
+You must call submit_statement exactly once. If Lean rejects the statement, you will
+see the error and may submit a corrected one.
+"""
+
+
+def formalization_prompt(problem_id: str, problem_text: str) -> str:
+    return f"""PROBLEM ID
+{problem_id}
+
+PROBLEM
+{problem_text}
+"""
+
+
+FORMALIZATION_TOOL: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "submit_statement",
+        "description": "Submit the Lean theorem header for this problem.",
+        "parameters": {
+            "type": "object",
+            "properties": {"lean_theorem_header": {"type": "string"}},
+            "required": ["lean_theorem_header"],
+            "additionalProperties": False,
+        },
+    },
+}
+
+
+BACK_TRANSLATION_SYSTEM_PROMPT = """You explain one Lean 4 + Mathlib theorem statement to a
+calculus teacher who cannot read Lean. The teacher will compare your explanation with
+the problem they wrote, so be literal: say exactly what this statement asserts, not what
+it was probably meant to assert. Mention every variable and its type, every quantifier,
+and every hypothesis. If Lean's conventions (for example x / 0 = 0, or Real.sqrt of a
+negative number being 0) affect what the statement means, say so. Write in English,
+without Lean syntax. You must call explain_statement exactly once.
+"""
+
+
+def back_translation_prompt(lean_theorem_header: str) -> str:
+    return f"""LEAN STATEMENT
+```lean
+{lean_theorem_header}
+```
+"""
+
+
+BACK_TRANSLATION_TOOL: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "explain_statement",
+        "description": "Explain in plain English what the Lean statement asserts.",
+        "parameters": {
+            "type": "object",
+            "properties": {"explanation": {"type": "string"}},
+            "required": ["explanation"],
+            "additionalProperties": False,
+        },
+    },
+}

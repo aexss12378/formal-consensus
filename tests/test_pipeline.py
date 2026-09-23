@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import tempfile
 import threading
 import unittest
@@ -325,6 +326,25 @@ class PipelineTests(unittest.TestCase):
             self.assertTrue(
                 all(row["status"] == "tool_failed" for row in backend["records"])
             )
+
+
+    def test_unconfirmed_statement_is_rejected_before_any_run_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = self.make_config(root)
+            agents = [ScriptedAgent(model, {}) for model in config.models]
+            problem = dataclasses.replace(
+                self.problem(), statement_fidelity_status="unresolved"
+            )
+            pipeline = ConsensusPipeline(
+                config, {"q1": problem}, "test-v1", [LABEL], agents, FakeLeanRunner()
+            )
+            run_dir = root / "run"
+            with self.assertRaises(PipelineError) as caught:
+                pipeline.run(["q1"], run_dir)
+            self.assertIn("q1", str(caught.exception))
+            self.assertFalse(run_dir.exists())
+            self.assertEqual([agent.seen for agent in agents], [[], [], []])
 
 
 if __name__ == "__main__":

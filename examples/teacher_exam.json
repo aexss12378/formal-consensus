@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "problems": [
+    {
+      "problem_id": "midterm_q3_epsilon_delta",
+      "problem_text": "Prove the statement using the epsilon-delta definition of a limit: the limit of (x^2 - 2x - 8)/(x - 4) as x approaches 4 is 6."
+    },
+    {
+      "problem_id": "midterm_q4_piecewise_continuity",
+      "problem_text": "Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, and f(x) = sqrt(x - 1) if x > 1."
+    }
+  ]
+}
