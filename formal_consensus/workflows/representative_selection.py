@@ -32,10 +32,16 @@ def _selection_validator(valid_ids: set[str]):
     return validate
 
 
-def aggregate_selection_votes(votes: list[dict[str, Any]]) -> str | None:
+def aggregate_selection_votes(
+    votes: list[dict[str, Any]], option_to_candidate: dict[str, str]
+) -> tuple[str, str]:
     counts = Counter(vote["selection"]["candidate_id"] for vote in votes)
     winner, count = counts.most_common(1)[0]
-    return winner if count >= 2 else None
+    if count >= 2:
+        return winner, "selected_by_majority"
+    # 三票各選一份時，每個選項都已通過 Lean 驗證與方法審查，選哪份都成立；
+    # 取候選編號最小（最早入池）的一份，不等人工選定。
+    return min(counts, key=option_to_candidate.__getitem__), "selected_by_tiebreak"
 
 
 def _select_one(
@@ -185,21 +191,15 @@ def run_representative_selection(run_dir: Path) -> Path:
             )
             if len(votes) != 3:
                 raise RuntimeError(f"{technique} 的代表選擇票數不完整")
-            winning_option = aggregate_selection_votes(votes)
+            winning_option, status = aggregate_selection_votes(
+                votes, option_to_candidate
+            )
             problem_rows.append(
                 {
                     "primary_technique": technique,
                     "candidate_ids": [item["candidate_id"] for item in candidates],
-                    "status": (
-                        "selected_by_majority"
-                        if winning_option is not None
-                        else "needs_human_selection"
-                    ),
-                    "selected_candidate_id": (
-                        option_to_candidate[winning_option]
-                        if winning_option is not None
-                        else None
-                    ),
+                    "status": status,
+                    "selected_candidate_id": option_to_candidate[winning_option],
                     "option_to_candidate": option_to_candidate,
                     "votes": votes,
                 }

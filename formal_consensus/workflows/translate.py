@@ -45,9 +45,6 @@ def _markdown(translator_id: str, problems: dict[str, Any]) -> str:
         lines += [f"## {problem_id}", "", item["problem_text"], ""]
         for row in item["solutions"]:
             lines += [f"### {row['primary_technique']}", ""]
-            if row.get("steps") is None:
-                lines += ["三票各選一份，需人工選定代表解後才能翻譯。", ""]
-                continue
             lines += [
                 f"{index}. {step}" for index, step in enumerate(row["steps"], start=1)
             ]
@@ -92,9 +89,6 @@ def run_translation(run_dir: Path, config_path: Path) -> tuple[Path, Path]:
         for group in read_json(representatives_path)["groups"]:
             technique = group["primary_technique"]
             candidate_id = group["selected_candidate_id"]
-            if candidate_id is None:
-                rows.append({"primary_technique": technique, "status": group["status"]})
-                continue
             path = translation_dir / f"{safe_component(candidate_id)}.json"
             if path.exists():
                 record = read_json(path)

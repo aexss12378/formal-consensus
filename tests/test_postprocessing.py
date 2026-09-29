@@ -41,25 +41,30 @@ class PostprocessingTests(unittest.TestCase):
             "unresolved",
         )
 
-    def test_representative_requires_two_votes(self) -> None:
+    def test_representative_majority_and_tiebreak(self) -> None:
+        # 選項代號順序刻意與候選編號不同，確認平手時比的是候選編號。
+        option_to_candidate = {"A": "p__C0003", "B": "p__C0001", "C": "p__C0002"}
         self.assertEqual(
             aggregate_selection_votes(
                 [
                     self.selection("A"),
                     self.selection("A"),
                     self.selection("B"),
-                ]
+                ],
+                option_to_candidate,
             ),
-            "A",
+            ("A", "selected_by_majority"),
         )
-        self.assertIsNone(
+        self.assertEqual(
             aggregate_selection_votes(
                 [
                     self.selection("A"),
                     self.selection("B"),
                     self.selection("C"),
-                ]
-            )
+                ],
+                option_to_candidate,
+            ),
+            ("B", "selected_by_tiebreak"),
         )
 
 
