@@ -3,14 +3,14 @@
   "models": [
     {
       "name": "deepseek",
-      "model_id": "deepseek-v4-flash:0731",
+      "model_id": "deepseek-v4.1-flash",
       "api": "ollama",
       "temperature": 0.2,
       "max_completion_tokens": 8000
     },
     {
-      "name": "qwen",
-      "model_id": "qwen3.5:397b",
+      "name": "minimax",
+      "model_id": "minimax-m3",
       "api": "ollama",
       "temperature": 0.2,
       "max_completion_tokens": 8000

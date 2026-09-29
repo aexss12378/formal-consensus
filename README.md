@@ -161,7 +161,7 @@ source .env
    }
    ```
 
-2. 把 `models` 三個模型與 `translation_model` 的 `api` 改成 `"openrouter"`，`model_id` 改成 OpenRouter 上的名稱。兩家的命名格式不同，例如 Ollama 的 `deepseek-v4-flash:0731` 在 OpenRouter 是 `deepseek/deepseek-v4-flash-0731`；其他模型的名稱請到 [OpenRouter 模型列表](https://openrouter.ai/models) 查。
+2. 把 `models` 三個模型與 `translation_model` 的 `api` 改成 `"openrouter"`，`model_id` 改成 OpenRouter 上的名稱。兩家的命名格式不同，例如已下架的舊版 Ollama `deepseek-v4-flash:0731`，在 OpenRouter 是 `deepseek/deepseek-v4-flash-0731`；其他模型的名稱請到 [OpenRouter 模型列表](https://openrouter.ai/models) 查。
 
 兩家也可以混用：每個模型各自用 `api` 指定走哪一家，兩把 key 都要填。OpenRouter 這條路在目前版本的程式還沒有完整跑過一次，第一次使用請先跑下一步的 preflight。
 
@@ -173,7 +173,7 @@ source .env
 uv run python -m formal_consensus.workflows.preflight \
   --config config.json \
   --input examples/problems.json \
-  --model qwen \
+  --model minimax \
   --problem demo_derivative_square
 ```
 
