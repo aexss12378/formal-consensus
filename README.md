@@ -53,21 +53,29 @@
 
 ### 輸出
 
-整個流程有兩次輸出，中間要由人確認（見「使用步驟」）。
+以題目檔 `teacher_exam.json` 為例。
 
-**第一次：起草 Lean 命題後**，題目檔旁會多出三個檔案，老師只會用到下面兩個，以 `teacher_exam.json` 為例：
+#### 中間產物
 
-| 檔案 | 用途 |
-|---|---|
-| `teacher_exam.draft.review.md` | **給人看的**。逐題並排「原題」「Lean 命題」「這個命題在說什麼」 |
-| `teacher_exam.draft.json` | **給人改的**。確認後把每題的 `statement_fidelity_status` 從 `unresolved` 改成 `confirmed`，再拿這個檔案當下一步的輸入 |
-
-**第二次：產生證明與教學步驟後**，結果放在 `runs/<題目檔名>/`，例如題目檔是 `teacher_exam.json` 時就是 `runs/teacher_exam/`；同名資料夾已經存在時，依序改用 `teacher_exam_01`、`teacher_exam_02`……程式一開始就會印出路徑。最後要拿去用的是：
+起草 Lean 命題後，放在題目檔旁，人工確認 1 時使用：
 
 | 檔案 | 用途 |
 |---|---|
-| `solutions.md` | **最終成果，也就是交付文件**。每題的題目，加上每個解法一份英文編號步驟，學生可以照著寫在考卷上 |
+| `teacher_exam.draft.review.md` | **人工確認 1 時看**。逐題並排「原題」「Lean 命題」「這個命題在說什麼」 |
+| `teacher_exam.draft.json` | **人工確認 1 時改**。把每題的 `statement_fidelity_status` 從 `unresolved` 改成 `confirmed`，再拿這個檔案當下一步的輸入 |
+
+題目檔旁還會有 `teacher_exam.draft.records.json`（原始 API 回覆），不用理會。
+
+#### 最終輸出
+
+翻譯完成後，放在 `runs/teacher_exam/`：
+
+| 檔案 | 用途 |
+|---|---|
+| `solutions.md` | **交付文件**。每題的題目，加上每個解法一份英文編號步驟，學生可以照著寫在考卷上。經過人工確認 2 之後才能交付 |
 | `report.md` | 執行紀錄：每題的執行狀態、提交與通過驗證的證明數、每輪共享池大小與 token、方法審查與代表解選擇的結果統計 |
+
+批次資料夾以題目檔命名；同名資料夾已經存在時，依序改用 `teacher_exam_01`、`teacher_exam_02`……程式一開始就會印出路徑。資料夾裡其他檔案是系統續跑用的，不用理會。
 
 `solutions.md` 長這樣（節錄自實際輸出）：
 
@@ -189,7 +197,7 @@ uv run python -m formal_consensus formalize --input examples/teacher_exam.json
 
 系統逐題請 `translation_model` 寫出 Lean 命題，先用 Lean 檢查能否編譯；不能編譯時把錯誤交回模型重寫，最多嘗試三次。接著另外呼叫一次模型，**只給 Lean 命題、不給原題**，說明這個命題實際在說什麼。給了原題的話，模型只會複述原意，看不出命題寫錯的地方。
 
-產生的檔案見「輸出」。草稿已存在時系統會拒絕執行，避免蓋掉人工修改。
+產生的檔案見「中間產物」。草稿已存在時系統會拒絕執行，避免蓋掉人工修改。
 
 **2. 人工確認**
 
