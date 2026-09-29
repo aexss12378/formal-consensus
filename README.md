@@ -4,6 +4,85 @@
 
 老師用自然語言出題；系統把題目起草成 Lean 命題，**經人確認後**才產生證明、選出每個方法的代表解，並翻成學生看得懂的教學步驟。本系統不處理學生作答或學生批改。
 
+## 輸入與輸出
+
+### 輸入：老師的題目檔
+
+一個 JSON 檔，每題只需要 `problem_id` 與 `problem_text`，範例是 `examples/teacher_exam.json`：
+
+```json
+{
+  "schema_version": 1,
+  "problems": [
+    {
+      "problem_id": "midterm_q4_piecewise_continuity",
+      "problem_text": "Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, and f(x) = sqrt(x - 1) if x > 1."
+    }
+  ]
+}
+```
+
+- `schema_version`：固定填 `1`。
+- `problems`：至少一題。
+- `problem_id`：題號，只能用英文字母、數字、底線、句點與連字號，第一個字必須是英文字母或數字，同一個檔案內不能重複。
+- `problem_text`：題目原文，不能是空字串。
+
+### 輸出
+
+整個流程有兩次輸出，中間要由人確認（見「從老師的題目開始」）。
+
+**第一次：起草 Lean 命題後**，題目檔旁會多出三個檔案，以 `teacher_exam.json` 為例：
+
+| 檔案 | 用途 |
+|---|---|
+| `teacher_exam.draft.review.md` | **給人看的**。逐題並排「原題」「Lean 命題」「這個命題在說什麼」 |
+| `teacher_exam.draft.json` | **給人改的**。確認後把每題的 `statement_fidelity_status` 從 `unresolved` 改成 `confirmed`，再拿這個檔案當下一步的輸入 |
+| `teacher_exam.draft.records.json` | 原始 API 回覆，出問題時查用 |
+
+**第二次：產生證明與教學步驟後**，結果放在 `runs/<批次資料夾>/`，資料夾名稱是執行開始的時間（例如 `runs/20260923_230223/`），程式一開始就會印出路徑。最後要拿去用的是：
+
+| 檔案 | 用途 |
+|---|---|
+| `translations.md` | **最終成果**。每題每個解題方法一份英文編號步驟，學生可以照著寫在考卷上 |
+| `translations.json` | 同上，給程式讀的版本 |
+| `report.md` | 執行紀錄：每題的執行狀態、提交與通過驗證的證明數、每輪共享池大小與 token、方法審查與代表解選擇的結果統計 |
+
+`translations.md` 長這樣（節錄自實際輸出）：
+
+```markdown
+## midterm_q4_piecewise_continuity
+
+Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, ...
+
+### Piecewise Function Case Analysis
+
+1. Strategy: f is built from two formulas glued together at x = 1. ...
+2. Case a < 1: On the open interval (-∞, 1), f agrees with the polynomial p(x) = 1 - x². ...
+...
+5. Conclusion: a ∈ ℝ was arbitrary, ... Hence f is continuous on (-∞, ∞).
+
+（代表解：`midterm_q4_piecewise_continuity__C0001`）
+```
+
+`###` 標題是解題方法，取自 `taxonomy.json` 的固定分類。批次資料夾內其他檔案見「主要輸出」。
+
+## 兩個要人確認的地方（human-in-the-loop）
+
+流程中有兩個地方一定要由人確認，一個在證明之前，一個在發給學生之前：
+
+| | 1. 題目 → Lean theorem | 2. Lean → 自然語言 |
+|---|---|---|
+| 什麼時候 | 起草 Lean 命題之後、產生證明之前 | 教學步驟翻譯之後、發給學生之前 |
+| 看哪個檔案 | `<檔名>.draft.review.md` | `runs/<批次資料夾>/translations.md` |
+| 確認什麼 | Lean 命題的意思與原題一致 | 每個步驟的數學正確、沒有跳步，而且用的是 `###` 標題寫的那個方法 |
+| 確認後做什麼 | 在 `<檔名>.draft.json` 把該題的 `statement_fidelity_status` 改成 `confirmed` | 沒有要改的欄位；人看過沒問題才發給學生 |
+| 系統會不會擋 | **會**：這次要跑的題目中只要有一題是 `unresolved`，系統就拒絕產生證明 | **不會**：系統只擋步驟裡出現 Lean、Mathlib、tactic 這幾個字，不檢查數學對不對 |
+
+- **第 1 點為什麼要確認**：命題寫錯時 Lean 照樣會通過，後面每一步看起來都正常，但都建立在錯的題目上。Lean 只擋得下「命題無法編譯」，擋不下「命題的意思跟原題不同」。
+- **第 2 點為什麼要確認**：Lean 驗證的是 proof 本身。把 proof 改寫成英文步驟是另一次模型呼叫，這一段沒有任何驗證，步驟可能漏掉、寫錯，或換成另一個方法。這一點只需要看數學，不需要看懂 Lean。
+
+兩點都可以把內容整段貼給慣用的 AI 協助檢查，但最後要由人判斷。
+
 ## 第一版規則
 
 - 純 Python 實作，不使用 LangGraph。
@@ -91,14 +170,40 @@ cd ../..
 `apply?` 的搜尋為 11.247 秒。這只是技術 smoke test，不是跨機器效能結論；
 正式報告仍應保存每次 `elapsed_seconds`。
 
-目前的三個模型都使用 Ollama Cloud；在本機 `.env` 填入 API key，再載入目前 shell：
+### API key：Ollama Cloud 或 OpenRouter 擇一
+
+模型可以走 Ollama Cloud 或 OpenRouter，只需要準備你要用的那一家的 key。key 寫在 repo 根目錄的 `.env`，每一行前面的 `export` 不能省：
 
 ```bash
-OLLAMA_API_KEY="..."
+export OLLAMA_API_KEY="你的 key"        # 用 Ollama Cloud 時
+export OPENROUTER_API_KEY="你的 key"    # 用 OpenRouter 時
+```
+
+每次開新的終端機，先在 repo 根目錄載入：
+
+```bash
 source .env
 ```
 
-程式只讀取環境變數，不會自行開啟 `.env`；`.env` 已列入 `.gitignore`。
+程式只讀取環境變數，不會自行開啟 `.env`。少了 `export` 時，變數只存在終端機本身，`uv run` 啟動的程式讀不到，會出現 `缺少環境變數 OLLAMA_API_KEY`（或 `OPENROUTER_API_KEY`）。`.env` 已列入 `.gitignore`。
+
+**用 Ollama Cloud**：目前的 `config.json` 就是這個設定，填好 `OLLAMA_API_KEY` 即可。
+
+**用 OpenRouter**：`config.json` 要改兩處。
+
+1. 在 `apis` 加一項：
+
+   ```json
+   "openrouter": {
+     "type": "openrouter",
+     "base_url": "https://openrouter.ai/api/v1/chat/completions",
+     "api_key_env": "OPENROUTER_API_KEY"
+   }
+   ```
+
+2. 把 `models` 三個模型與 `translation_model` 的 `api` 改成 `"openrouter"`，`model_id` 改成 OpenRouter 上的名稱。兩家的命名格式不同，例如 Ollama 的 `deepseek-v4-flash:0731` 在 OpenRouter 是 `deepseek/deepseek-v4-flash-0731`；其他模型的名稱請到 [OpenRouter 模型列表](https://openrouter.ai/models) 查。
+
+兩家也可以混用：每個模型各自用 `api` 指定走哪一家，兩把 key 都要填。OpenRouter 這條路在目前版本的程式還沒有完整跑過一次，第一次使用請先跑下方「執行」一節的 preflight。
 
 正式執行前，必須先確認 `config.json` 內三個模型的精確型號仍可使用，並凍結設定。
 
