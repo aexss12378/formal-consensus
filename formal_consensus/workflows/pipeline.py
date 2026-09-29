@@ -284,7 +284,7 @@ class ConsensusPipeline:
 
         # 只要共享池有新增內容，就必須再開一輪，讓其他模型真的看見它。
         # 代理只有呼叫 stop 才會結束一輪，所以旗標恆為 True，不再用它分辨停止原因；
-        # 想知道本輪有沒有人交了卻沒通過，查 failures.json。
+        # 想知道本輪有沒有人交了卻沒通過，查 state.json 的 failures。
         if not accepted:
             state["status"] = "complete"
             state["stop_reason"] = "no_new_verified_candidate"
@@ -476,8 +476,6 @@ class ConsensusPipeline:
     @staticmethod
     def _save_problem_state(problem_dir: Path, state: dict[str, Any]) -> None:
         write_json_atomic(problem_dir / "state.json", state)
-        write_json_atomic(problem_dir / "candidates.json", state["candidates"])
-        write_json_atomic(problem_dir / "failures.json", state["failures"])
 
     @staticmethod
     def _problem_summary(run_dir: Path, problem_id: str) -> dict[str, Any]:
