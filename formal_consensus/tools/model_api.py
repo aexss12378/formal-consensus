@@ -160,6 +160,9 @@ class ApiClient:
             }
         if model.temperature is not None:
             payload["temperature"] = model.temperature
+        # 思考等級；可用的值因模型而異，Ollama 以 /api/show 的 thinking.values 為準。
+        if model.reasoning_effort is not None:
+            payload["reasoning_effort"] = model.reasoning_effort
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         headers = {
             "Authorization": f"Bearer {api_key}",

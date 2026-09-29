@@ -23,9 +23,10 @@ class ModelConfig:
     allow_provider_fallbacks: bool = True
     require_parameters: bool = True
     api: str = "openrouter"
+    reasoning_effort: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        result = {
             "name": self.name,
             "model_id": self.model_id,
             "api": self.api,
@@ -37,6 +38,10 @@ class ModelConfig:
                 "require_parameters": self.require_parameters,
             },
         }
+        # 只在有設定時寫出，沒設的舊批次凍結設定比對結果不變。
+        if self.reasoning_effort is not None:
+            result["reasoning_effort"] = self.reasoning_effort
+        return result
 
 
 @dataclass(frozen=True)
@@ -193,6 +198,9 @@ def _parse_model(
         or not isinstance(temperature, (int, float))
     ):
         raise ConfigError(f"{field}.temperature 必須是數字或 null")
+    reasoning_effort = row.get("reasoning_effort")
+    if reasoning_effort is not None:
+        reasoning_effort = _require_string(reasoning_effort, f"{field}.reasoning_effort")
     return ModelConfig(
         name=_require_string(row.get("name"), f"{field}.name"),
         model_id=_require_string(
@@ -207,6 +215,7 @@ def _parse_model(
         allow_provider_fallbacks=allow_fallbacks,
         require_parameters=require_parameters,
         api=api_name,
+        reasoning_effort=reasoning_effort,
     )
 
 

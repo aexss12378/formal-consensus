@@ -71,6 +71,19 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.api_for(config.models[1]).kind, "ollama")
         self.assertEqual(config.api_for(config.models[2]).kind, "openrouter")
 
+    def test_reasoning_effort_is_optional_and_only_written_when_set(self) -> None:
+        raw = base_config()
+        raw["models"][1]["reasoning_effort"] = "low"
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "config.json"
+            path.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+            config = load_config(path)
+
+        self.assertEqual(config.models[1].reasoning_effort, "low")
+        self.assertEqual(config.models[1].to_dict()["reasoning_effort"], "low")
+        self.assertIsNone(config.models[0].reasoning_effort)
+        self.assertNotIn("reasoning_effort", config.models[0].to_dict())
+
     def test_legacy_single_api_config_remains_readable(self) -> None:
         raw = base_config()
         for model in raw["models"]:

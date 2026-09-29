@@ -141,9 +141,21 @@ class ModelApiTests(unittest.TestCase):
             )
 
         self.assertNotIn("provider", observed["payload"])
+        self.assertNotIn("reasoning_effort", observed["payload"])
         self.assertIsNone(observed["referer"])
         self.assertIsNone(observed["title"])
         self.assertEqual(result.response_provider, "ollama")
+
+        low_thinking = ModelConfig(
+            "qwen", "qwen3-coder:480b", 0.0, 100, api="ollama", reasoning_effort="low"
+        )
+        with patch.dict(os.environ, {"TEST_OLLAMA_KEY": "token"}):
+            client.chat(
+                low_thinking,
+                [{"role": "user", "content": "test"}],
+                [{"type": "function", "function": {"name": "submit"}}],
+            )
+        self.assertEqual(observed["payload"]["reasoning_effort"], "low")
 
 
 if __name__ == "__main__":
