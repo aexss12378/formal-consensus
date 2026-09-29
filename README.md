@@ -17,10 +17,10 @@
     ▼
 系統產生證明與教學步驟（使用步驟 3）
     │  三個模型寫證明 → Lean 驗證 → 每個解法選一份代表解 → 翻成英文步驟
-    │  產生 runs/<批次資料夾>/translations.md
+    │  產生 runs/teacher_exam/solutions.md
     ▼
 【人工確認 2】Lean → 自然語言
-    │  看 translations.md，確認數學正確、沒有跳步
+    │  看 solutions.md，確認數學正確、沒有跳步
     │  系統不會擋這一步，要人自己把關
     ▼
 發給學生
@@ -62,32 +62,32 @@
 | `teacher_exam.draft.review.md` | **給人看的**。逐題並排「原題」「Lean 命題」「這個命題在說什麼」 |
 | `teacher_exam.draft.json` | **給人改的**。確認後把每題的 `statement_fidelity_status` 從 `unresolved` 改成 `confirmed`，再拿這個檔案當下一步的輸入 |
 
-**第二次：產生證明與教學步驟後**，結果放在 `runs/<批次資料夾>/`，資料夾名稱是執行開始的時間（例如 `runs/20260923_230223/`），程式一開始就會印出路徑。最後要拿去用的是：
+**第二次：產生證明與教學步驟後**，結果放在 `runs/<題目檔名>/`，例如題目檔是 `teacher_exam.json` 時就是 `runs/teacher_exam/`；同名資料夾已經存在時，依序改用 `teacher_exam_01`、`teacher_exam_02`……程式一開始就會印出路徑。最後要拿去用的是：
 
 | 檔案 | 用途 |
 |---|---|
-| `translations.md` | **最終成果**。每題每個解題方法一份英文編號步驟，學生可以照著寫在考卷上 |
-| `translations.json` | 同上，給程式讀的版本 |
+| `solutions.md` | **最終成果，也就是交付文件**。每題的題目，加上每個解法一份英文編號步驟，學生可以照著寫在考卷上 |
+| `translations.json` | 同上，給程式讀的版本；另外記錄翻譯用的模型與每個解法用的是哪一份證明 |
 | `report.md` | 執行紀錄：每題的執行狀態、提交與通過驗證的證明數、每輪共享池大小與 token、方法審查與代表解選擇的結果統計 |
 
-`translations.md` 長這樣（節錄自實際輸出）：
+`solutions.md` 長這樣（節錄自實際輸出）：
 
 ```markdown
-## midterm_q4_piecewise_continuity
+# Solutions
+
+## Problem 1
 
 Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, ...
 
-### Piecewise Function Case Analysis
+### Solution 1: Piecewise Function Case Analysis
 
 1. Strategy: f is built from two formulas glued together at x = 1. ...
 2. Case a < 1: On the open interval (-∞, 1), f agrees with the polynomial p(x) = 1 - x². ...
 ...
 5. Conclusion: a ∈ ℝ was arbitrary, ... Hence f is continuous on (-∞, ∞).
-
-（代表解：`midterm_q4_piecewise_continuity__C0001`）
 ```
 
-`###` 標題是解題方法，取自 `taxonomy.json` 的固定分類。批次資料夾內其他檔案見 [開發說明](docs/開發說明.md) 的「主要輸出」。
+題目照題目檔的順序編成 Problem 1、2……；`Solution N:` 後面是解題方法，取自 `taxonomy.json` 的固定分類。沒有任何解法通過的題目會寫 `No verified solution was produced for this problem.`。批次資料夾內其他檔案見 [開發說明](docs/開發說明.md) 的「主要輸出」。
 
 ## 兩個要人確認的地方（human-in-the-loop）
 
@@ -96,8 +96,8 @@ Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <=
 | | 1. 題目 → Lean theorem | 2. Lean → 自然語言 |
 |---|---|---|
 | 什麼時候 | 起草 Lean 命題之後、產生證明之前 | 教學步驟翻譯之後、發給學生之前 |
-| 看哪個檔案 | `<檔名>.draft.review.md` | `runs/<批次資料夾>/translations.md` |
-| 確認什麼 | Lean 命題的意思與原題一致 | 每個步驟的數學正確、沒有跳步，而且用的是 `###` 標題寫的那個方法 |
+| 看哪個檔案 | `<檔名>.draft.review.md` | `runs/<題目檔名>/solutions.md` |
+| 確認什麼 | Lean 命題的意思與原題一致 | 每個步驟的數學正確、沒有跳步，而且用的是 `Solution N:` 後面寫的那個方法 |
 | 確認後做什麼 | 在 `<檔名>.draft.json` 把該題的 `statement_fidelity_status` 改成 `confirmed` | 沒有要改的欄位；人看過沒問題才發給學生 |
 | 系統會不會擋 | **會**：這次要跑的題目中只要有一題是 `unresolved`，系統就拒絕產生證明 | **不會**：系統只擋步驟裡出現 Lean、Mathlib、tactic 這幾個字，不檢查數學對不對 |
 
@@ -220,16 +220,16 @@ uv run python -m formal_consensus --input examples/teacher_exam.draft.json
 uv run python -m formal_consensus --input examples/teacher_exam.draft.json --unit midterm_q4_piecewise_continuity
 ```
 
-程式一開始就會印出批次資料夾路徑。中途失敗時，錯誤訊息會附上續跑方式：在原指令後面加上 `--run-dir runs/<批次資料夾>`，已完成的部分不會重跑，也不會再次呼叫模型。
+程式一開始就會印出批次資料夾路徑。中途失敗時，錯誤訊息會附上續跑方式：在原指令後面加上 `--run-dir` 與印出的批次資料夾，已完成的部分不會重跑，也不會再次呼叫模型。
 
 ```bash
-uv run python -m formal_consensus --input examples/teacher_exam.draft.json --run-dir runs/<批次資料夾>
+uv run python -m formal_consensus --input examples/teacher_exam.draft.json --run-dir runs/teacher_exam
 ```
 
 ## 限制
 
 - Lean 通過只代表固定的 Lean 命題有一份通過檢查的證明，不代表命題與原題意思相同。`confirmed` 代表有人比對過，也不代表命題一定正確。
-- 每份解法屬於哪個方法（`translations.md` 的 `###` 標題），是由同一組三個模型投票確認的，其中可能包含寫出這份證明的模型，不是人工判斷。
+- 每份解法屬於哪個方法（`solutions.md` 裡 `Solution N:` 後面的名稱），是由同一組三個模型投票確認的，其中可能包含寫出這份證明的模型，不是人工判斷。
 
 ## 技術細節
 

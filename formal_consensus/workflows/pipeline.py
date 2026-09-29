@@ -15,6 +15,7 @@ from ..core.config import ExperimentConfig, load_config, load_taxonomy
 from ..core.io_utils import (
     create_unique_directory,
     read_json,
+    run_dir_name,
     utc_now_iso,
     write_json_atomic,
 )
@@ -86,13 +87,18 @@ class ConsensusPipeline:
             )
         return selected
 
-    def run(self, problem_ids: Sequence[str], run_dir: Path | None = None) -> Path:
+    def run(
+        self,
+        problem_ids: Sequence[str],
+        run_dir: Path | None = None,
+        run_name: str | None = None,
+    ) -> Path:
         selected = self.select_problems(problem_ids)
 
         target = (
             run_dir.expanduser().resolve()
             if run_dir is not None
-            else create_unique_directory(self.config.runs_dir)
+            else create_unique_directory(self.config.runs_dir, run_name)
         )
         target.mkdir(parents=True, exist_ok=True)
         self._freeze_or_validate_run_inputs(target, selected)
@@ -530,7 +536,7 @@ def main() -> None:
     pipeline = build_pipeline(args.config, args.input)
     problem_ids = list(pipeline.problems) if args.all else [args.unit]
     try:
-        run_dir = pipeline.run(problem_ids, args.run_dir)
+        run_dir = pipeline.run(problem_ids, args.run_dir, run_dir_name(args.input))
     except (PipelineError, SchemaError, ValueError, OSError, json.JSONDecodeError) as exc:
         raise SystemExit(f"執行失敗：{exc}") from exc
     finally:

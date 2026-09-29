@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+from formal_consensus.core.io_utils import create_unique_directory, run_dir_name
 from formal_consensus.workflows import run_all
 from formal_consensus.workflows.pipeline import PipelineError
 
@@ -48,7 +49,7 @@ class RunAllTests(unittest.TestCase):
             mock.patch.object(
                 run_all,
                 "run_translation",
-                return_value=(Path("translations.json"), Path("translations.md")),
+                return_value=(Path("translations.json"), Path("solutions.md")),
             ) as translate,
             mock.patch.object(
                 sys, "argv", ["run_all", "--input", "i", *argv]
@@ -67,6 +68,8 @@ class RunAllTests(unittest.TestCase):
             run_dir = pipeline.run.call_args.args[1]
             self.assertEqual(pipeline.run.call_args.args[0], ["p1"])
             self.assertTrue(run_dir.is_dir())
+            # 批次資料夾以題目檔名命名（argv 的 --input 是 "i"）。
+            self.assertEqual(run_dir.name, "i")
             for step in (review, select, report):
                 step.assert_called_once_with(run_dir)
             translate.assert_called_once_with(run_dir, Path("config.json"))
@@ -90,6 +93,14 @@ class RunAllTests(unittest.TestCase):
                 self.run_main(pipeline, ["--unit", "typo"])
             self.assertEqual(list(Path(tmp).iterdir()), [])
             pipeline.run.assert_not_called()
+
+    def test_run_dir_is_named_after_exam_file(self) -> None:
+        self.assertEqual(run_dir_name(Path("examples/teacher_exam.draft.json")), "teacher_exam")
+        self.assertEqual(run_dir_name(Path("examples/teacher_exam.json")), "teacher_exam")
+        with tempfile.TemporaryDirectory() as tmp:
+            first = create_unique_directory(Path(tmp), "teacher_exam")
+            second = create_unique_directory(Path(tmp), "teacher_exam")
+            self.assertEqual((first.name, second.name), ("teacher_exam", "teacher_exam_01"))
 
 
 if __name__ == "__main__":

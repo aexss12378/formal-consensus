@@ -31,9 +31,14 @@ def write_json_atomic(path: Path, payload: Any) -> None:
     os.replace(temporary, path)
 
 
-def create_unique_directory(base: Path) -> Path:
+def run_dir_name(input_path: Path) -> str:
+    """批次資料夾用題目檔名；起草產生的 <名>.draft.json 也對應到 <名>。"""
+    return input_path.stem.removesuffix(".draft")
+
+
+def create_unique_directory(base: Path, stem: str | None = None) -> Path:
     base.mkdir(parents=True, exist_ok=True)
-    stem = timestamp_id()
+    stem = stem or timestamp_id()
     candidate = base / stem
     suffix = 1
     while candidate.exists():

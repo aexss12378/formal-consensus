@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from ..core.io_utils import create_unique_directory
+from ..core.io_utils import create_unique_directory, run_dir_name
 from ..core.schemas import SchemaError
 from .method_review import run_method_review
 from .pipeline import PipelineError, build_pipeline
@@ -47,7 +47,7 @@ def main() -> None:
     run_dir = (
         args.run_dir.expanduser().resolve()
         if args.run_dir is not None
-        else create_unique_directory(pipeline.config.runs_dir)
+        else create_unique_directory(pipeline.config.runs_dir, run_dir_name(args.input))
     )
     print(f"批次資料夾：{run_dir}", flush=True)
     resume_hint = f"原指令加上 --run-dir {run_dir} 即可續跑，已完成的部分不會重新呼叫"

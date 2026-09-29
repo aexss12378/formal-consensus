@@ -39,16 +39,19 @@ def validate_translation(raw: dict[str, Any]) -> dict[str, list[str]]:
     return {"steps": cleaned}
 
 
-def _markdown(translator_id: str, problems: dict[str, Any]) -> str:
-    lines = ["# 教學步驟解法", "", f"翻譯模型：`{translator_id}`", ""]
-    for problem_id, item in problems.items():
-        lines += [f"## {problem_id}", "", item["problem_text"], ""]
-        for row in item["solutions"]:
-            lines += [f"### {row['primary_technique']}", ""]
+def _markdown(problems: dict[str, Any]) -> str:
+    # 這份是交付文件：只放題目與解法；翻譯模型與代表解 ID 留在 translations.json。
+    lines = ["# Solutions", ""]
+    for number, item in enumerate(problems.values(), start=1):
+        lines += [f"## Problem {number}", "", item["problem_text"], ""]
+        if not item["solutions"]:
+            lines += ["No verified solution was produced for this problem.", ""]
+        for index, row in enumerate(item["solutions"], start=1):
+            lines += [f"### Solution {index}: {row['primary_technique']}", ""]
             lines += [
-                f"{index}. {step}" for index, step in enumerate(row["steps"], start=1)
+                f"{step_no}. {step}" for step_no, step in enumerate(row["steps"], start=1)
             ]
-            lines += ["", f"（代表解：`{row['candidate_id']}`）", ""]
+            lines += [""]
     return "\n".join(lines)
 
 
@@ -149,8 +152,8 @@ def run_translation(run_dir: Path, config_path: Path) -> tuple[Path, Path]:
             "completed_at": utc_now_iso(),
         },
     )
-    markdown_path = root / "translations.md"
-    markdown_path.write_text(_markdown(model.model_id, all_results), encoding="utf-8")
+    markdown_path = root / "solutions.md"
+    markdown_path.write_text(_markdown(all_results), encoding="utf-8")
     return json_path, markdown_path
 
 
