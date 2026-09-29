@@ -40,7 +40,7 @@ def validate_translation(raw: dict[str, Any]) -> dict[str, list[str]]:
 
 
 def _markdown(problems: dict[str, Any]) -> str:
-    # 這份是交付文件：只放題目與解法；翻譯模型與代表解 ID 留在 translations.json。
+    # 這份是交付文件：只放題目與解法；翻譯模型與代表解 ID 留在各題的 translations/ 與 representatives.json。
     lines = ["# Solutions", ""]
     for number, item in enumerate(problems.values(), start=1):
         lines += [f"## Problem {number}", "", item["problem_text"], ""]
@@ -55,7 +55,7 @@ def _markdown(problems: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def run_translation(run_dir: Path, config_path: Path) -> tuple[Path, Path]:
+def run_translation(run_dir: Path, config_path: Path) -> Path:
     root = run_dir.expanduser().resolve()
     _, problems, _, _ = load_frozen_run(root)
     # 翻譯模型讀目前的設定檔，不讀批次凍結設定，所以舊批次也能補翻。
@@ -142,19 +142,9 @@ def run_translation(run_dir: Path, config_path: Path) -> tuple[Path, Path]:
             f"用相同批次續跑不會重複呼叫：{errors}"
         )
 
-    json_path = root / "translations.json"
-    write_json_atomic(
-        json_path,
-        {
-            "schema_version": 1,
-            "translation_model": model.to_dict(),
-            "problems": all_results,
-            "completed_at": utc_now_iso(),
-        },
-    )
     markdown_path = root / "solutions.md"
     markdown_path.write_text(_markdown(all_results), encoding="utf-8")
-    return json_path, markdown_path
+    return markdown_path
 
 
 def main() -> None:
@@ -163,10 +153,9 @@ def main() -> None:
     parser.add_argument("--run-dir", type=Path, required=True)
     args = parser.parse_args()
     try:
-        json_path, markdown_path = run_translation(args.run_dir, args.config)
+        markdown_path = run_translation(args.run_dir, args.config)
     except (ValueError, RuntimeError, OSError) as exc:
         raise SystemExit(f"翻譯失敗：{exc}") from exc
-    print(json_path)
     print(markdown_path)
 
 

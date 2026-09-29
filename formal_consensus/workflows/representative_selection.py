@@ -83,7 +83,6 @@ def run_representative_selection(run_dir: Path) -> Path:
         )
         for model in config.models
     }
-    all_results: dict[str, Any] = {}
 
     for problem_id, problem in problems.items():
         state = load_complete_problem_state(root, problem_id)
@@ -220,18 +219,8 @@ def run_representative_selection(run_dir: Path) -> Path:
         write_json_atomic(
             root / "problems" / problem_id / "representatives.json", result
         )
-        all_results[problem_id] = result
 
-    output = root / "representatives.json"
-    write_json_atomic(
-        output,
-        {
-            "schema_version": 1,
-            "problems": all_results,
-            "completed_at": utc_now_iso(),
-        },
-    )
-    return output
+    return root
 
 
 def main() -> None:

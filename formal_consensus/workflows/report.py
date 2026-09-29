@@ -7,7 +7,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from ..core.io_utils import read_json, utc_now_iso, write_json_atomic
+from ..core.io_utils import read_json
 from .postprocess import load_frozen_run
 
 
@@ -48,7 +48,7 @@ def _round_context_metrics(
     return metrics
 
 
-def build_report(run_dir: Path) -> tuple[Path, Path]:
+def build_report(run_dir: Path) -> Path:
     root = run_dir.expanduser().resolve()
     _, problems, _, _ = load_frozen_run(root)
     rows: list[dict[str, Any]] = []
@@ -96,15 +96,6 @@ def build_report(run_dir: Path) -> tuple[Path, Path]:
             ]
         rows.append(row)
 
-    report = {
-        "schema_version": 1,
-        "run_dir": str(root),
-        "generated_at": utc_now_iso(),
-        "problems": rows,
-    }
-    json_path = root / "report.json"
-    write_json_atomic(json_path, report)
-
     lines = [
         "# 三模型 Lean 形式溝通實驗摘要",
         "",
@@ -133,7 +124,7 @@ def build_report(run_dir: Path) -> tuple[Path, Path]:
             lines.insert(-1, f"- 代表選擇：{row['representative_status_counts']}")
     markdown_path = root / "report.md"
     markdown_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-    return json_path, markdown_path
+    return markdown_path
 
 
 def main() -> None:
@@ -141,10 +132,9 @@ def main() -> None:
     parser.add_argument("--run-dir", type=Path, required=True)
     args = parser.parse_args()
     try:
-        json_path, markdown_path = build_report(args.run_dir)
+        markdown_path = build_report(args.run_dir)
     except (ValueError, OSError) as exc:
         raise SystemExit(f"報告建立失敗：{exc}") from exc
-    print(json_path)
     print(markdown_path)
 
 

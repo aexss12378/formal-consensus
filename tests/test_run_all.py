@@ -34,22 +34,22 @@ class RunAllTests(unittest.TestCase):
         with (
             mock.patch.object(run_all, "build_pipeline", return_value=pipeline),
             mock.patch.object(
-                run_all, "run_method_review", return_value=Path("review.json")
+                run_all, "run_method_review", return_value=Path("run")
             ) as review,
             mock.patch.object(
                 run_all,
                 "run_representative_selection",
-                return_value=Path("representatives.json"),
+                return_value=Path("run"),
             ) as select,
             mock.patch.object(
                 run_all,
                 "build_report",
-                return_value=(Path("report.json"), Path("report.md")),
+                return_value=Path("report.md"),
             ) as report,
             mock.patch.object(
                 run_all,
                 "run_translation",
-                return_value=(Path("translations.json"), Path("solutions.md")),
+                return_value=Path("solutions.md"),
             ) as translate,
             mock.patch.object(
                 sys, "argv", ["run_all", "--input", "i", *argv]

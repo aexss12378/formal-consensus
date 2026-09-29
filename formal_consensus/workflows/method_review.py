@@ -77,7 +77,6 @@ def run_method_review(run_dir: Path) -> Path:
         )
         for model in config.models
     }
-    all_summaries: dict[str, Any] = {}
 
     for problem_id, problem in problems.items():
         state = load_complete_problem_state(root, problem_id)
@@ -180,18 +179,8 @@ def run_method_review(run_dir: Path) -> Path:
         write_json_atomic(
             root / "problems" / problem_id / "method_review_summary.json", summary
         )
-        all_summaries[problem_id] = summary
 
-    output = root / "method_review_summary.json"
-    write_json_atomic(
-        output,
-        {
-            "schema_version": 1,
-            "problems": all_summaries,
-            "completed_at": utc_now_iso(),
-        },
-    )
-    return output
+    return root
 
 
 def main() -> None:

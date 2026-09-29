@@ -235,12 +235,9 @@ class PipelineTests(unittest.TestCase):
                 self.assertNotIn("gpt", item["candidate_id"])
                 self.assertNotIn("gemini", item["candidate_id"])
                 self.assertNotIn("claude", item["candidate_id"])
-            report_json, report_markdown = build_report(run_dir)
-            self.assertTrue(report_json.is_file())
-            self.assertTrue(report_markdown.is_file())
-            self.assertEqual(
-                read_json(report_json)["problems"][0]["accepted_unique_verified"],
-                3,
+            report_markdown = build_report(run_dir)
+            self.assertIn(
+                "唯一且通過驗證的候選數：3", report_markdown.read_text(encoding="utf-8")
             )
 
     def test_partial_agent_outputs_are_reused_on_resume(self) -> None:

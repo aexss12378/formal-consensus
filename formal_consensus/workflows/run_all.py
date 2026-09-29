@@ -70,9 +70,7 @@ def main() -> None:
             output = step(run_dir)
         except (ValueError, RuntimeError, OSError) as exc:
             raise SystemExit(f"{label}失敗：{exc}\n{resume_hint}") from exc
-        paths = output if isinstance(output, tuple) else (output,)
-        for path in paths:
-            print(f"{label}完成：{path}", flush=True)
+        print(f"{label}完成：{output}", flush=True)
 
 
 if __name__ == "__main__":
