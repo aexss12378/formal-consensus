@@ -3,15 +3,14 @@
   "models": [
     {
       "name": "deepseek",
-      "model_id": "deepseek-v4.1-flash",
+      "model_id": "deepseek-v4-pro:0813",
       "api": "ollama",
       "temperature": 0.2,
-      "max_completion_tokens": 32000,
-      "reasoning_effort": "low"
+      "max_completion_tokens": 32000
     },
     {
-      "name": "minimax",
-      "model_id": "minimax-m3",
+      "name": "kimi",
+      "model_id": "kimi-k2.7-code",
       "api": "ollama",
       "temperature": 0.2,
       "max_completion_tokens": 32000

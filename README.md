@@ -181,7 +181,7 @@ source .env
 uv run python -m formal_consensus.workflows.preflight \
   --config config.json \
   --input examples/problems.json \
-  --model minimax \
+  --model kimi \
   --problem demo_derivative_square
 ```
 
