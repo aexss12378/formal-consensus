@@ -3,14 +3,14 @@
   "dataset_id": "jev_primary_method_contrast_v1",
   "purpose": "以同一題的兩種主要方法，實測 Jev 是否將不同方法分開，並將同方法的推導變體歸為同類。",
   "evaluation_role": "pilot",
-  "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+  "taxonomy_version": "stewart-9e-ch1-4-primary-v2",
   "reference_label_basis": "使用者於 2026-10-01 同意以導數定義與 Power Rule 各兩份證明進行對照。Codex 依此設計編寫證明，並在呼叫 Jev 前依證明結構固定標準標籤；未由 Jev 產生標準答案。這是人工設計的試測資料，沒有第三方獨立標註。",
   "selection": "完整保留事先設計的四份證明；不依 Jev 分類結果挑選或修改案例。",
   "case_type_definitions": {
     "same_method_variant": "同一題、同一主要方法的推導變體，應分到同一類。",
     "different_primary_methods": "同一題採用不同主要方法，應分到不同類且標籤正確。"
   },
-  "classifier_input_policy": "僅傳入相同的 problem_text、lean_imports、移除 theorem 宣告名稱後的 Lean 命題型別，以及各份 proof_body。不傳案例編號、題號、reference、source、lean_recheck 或預期方法種類數。證明本體不含提示主要方法的註解。沿用既有分類指示與完整 59 個課本方法選項。",
+  "classifier_input_policy": "僅傳入相同的 problem_text、lean_imports、移除 theorem 宣告名稱後的 Lean 命題型別，以及各份 proof_body。不傳案例編號、題號、reference、source、lean_recheck 或預期方法種類數。證明本體不含提示主要方法的註解。沿用既有分類指示與完整 58 個課本方法選項。",
   "limitations": [
     "只有一個題目、兩種方法與四份人工編寫的證明，不能證明跨題或完整課本方法分類能力。",
     "同題的推導變體並非四個獨立題目；正確率只描述這四份解答。",
