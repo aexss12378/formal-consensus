@@ -20,7 +20,8 @@ have no further candidate, call stop. Do not answer with prose instead of a tool
 Inter-agent communication is Lean-only. The shared pool contains complete verified
 proofs from earlier rounds. Do not include natural-language solution explanations,
 plans, critiques, or comments in proof_body. Metadata fields required by the protocol
-are allowed, but primary_technique is private and will not be shown to peers.
+are allowed. The primary_technique label is shared with peers alongside each
+verified proof in later rounds.
 
 Every submitted candidate must completely prove the fixed theorem. Do not submit
 fragments, helper lemmas, sorry, admit, axioms, opaque declarations, or modified
@@ -78,9 +79,9 @@ FIXED THEOREM HEADER
 SHARED VERIFIED PROOFS FROM EARLIER ROUNDS
 {pool_text}
 
-PRIVATE PRIMARY TECHNIQUE LABELS
-Choose exactly one label for each submitted proof. The label is stored by the backend
-and is not shared with other agents.
+PRIMARY TECHNIQUE LABELS
+Choose exactly one label for each submitted proof. The backend stores the label and
+shares it with peers alongside the verified proof in later rounds.
 {labels}
 
 PROTOCOL
