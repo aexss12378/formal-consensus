@@ -170,6 +170,15 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("受測案例編號重複")
     if any(case["reference"]["primary_technique"] not in labels for case in cases):
         raise ValueError("標準方法標籤不在方法清單中")
+    for case in cases:
+        case_types = case["reference"].get("case_types")
+        if not isinstance(case_types, list) or any(
+            not isinstance(tag, str) or not tag.strip() for tag in case_types
+        ):
+            raise ValueError(
+                f"{case['case_id']}.reference.case_types 必須是字串陣列，"
+                "且類型名稱不得為空"
+            )
     records = [
         {
             "case_id": case["case_id"],
