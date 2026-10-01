@@ -3,7 +3,7 @@
   "dataset_id": "jev_primary_method_pilot_v1",
   "purpose": "小規模試測 Jev 對課本主要方法的分類，檢查同方法不同推導及輔助方法誤判。",
   "evaluation_role": "pilot",
-  "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+  "taxonomy_version": "stewart-9e-ch1-4-primary-v2",
   "reference_label_basis": "逐份檢視證明結構後提出標準方法標籤；使用者於 2026-10-01 同意兩題的標籤。未直接沿用生成模型自填標籤或既有模型方法審查結果。Lean 驗證不證明方法標籤正確。",
   "selection": "完整收錄這兩題最終共享池的全部 11 份證明，未依 Jev 結果挑選。",
   "case_type_definitions": {
