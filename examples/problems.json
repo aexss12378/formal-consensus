@@ -8,7 +8,7 @@
         "import Mathlib"
       ],
       "lean_theorem_header": "theorem demo_addition : (1 : Nat) + 1 = 2 :=",
-      "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+      "taxonomy_version": "stewart-9e-ch1-4-primary-v2",
       "statement_fidelity_status": "formal_benchmark"
     },
     {
@@ -18,7 +18,7 @@
         "import Mathlib"
       ],
       "lean_theorem_header": "theorem demo_derivative_square (x : ℝ) :\n    HasDerivAt (fun y : ℝ => y ^ 2) (2 * x) x :=",
-      "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+      "taxonomy_version": "stewart-9e-ch1-4-primary-v2",
       "statement_fidelity_status": "formal_benchmark"
     }
   ]
