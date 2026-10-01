@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "dataset_id": "jev_primary_method_contrast_v1",
+  "purpose": "以同一題的兩種主要方法，實測 Jev 是否將不同方法分開，並將同方法的推導變體歸為同類。",
+  "evaluation_role": "pilot",
+  "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+  "reference_label_basis": "使用者於 2026-10-01 同意以導數定義與 Power Rule 各兩份證明進行對照。Codex 依此設計編寫證明，並在呼叫 Jev 前依證明結構固定標準標籤；未由 Jev 產生標準答案。這是人工設計的試測資料，沒有第三方獨立標註。",
+  "selection": "完整保留事先設計的四份證明；不依 Jev 分類結果挑選或修改案例。",
+  "case_type_definitions": {
+    "same_method_variant": "同一題、同一主要方法的推導變體，應分到同一類。",
+    "different_primary_methods": "同一題採用不同主要方法，應分到不同類且標籤正確。"
+  },
+  "classifier_input_policy": "僅傳入相同的 problem_text、lean_imports、移除 theorem 宣告名稱後的 Lean 命題型別，以及各份 proof_body。不傳案例編號、題號、reference、source、lean_recheck 或預期方法種類數。證明本體不含提示主要方法的註解。沿用既有分類指示與完整 59 個課本方法選項。",
+  "limitations": [
+    "只有一個題目、兩種方法與四份人工編寫的證明，不能證明跨題或完整課本方法分類能力。",
+    "同題的推導變體並非四個獨立題目；正確率只描述這四份解答。",
+    "Lean 通過只驗證形式化證明，不是主要方法標籤正確的證據。",
+    "預期兩種方法只涵蓋本組受測解答，不表示此題只有兩種可能的課本方法。",
+    "若用本組結果調整分類指示，須另外準備不同題目作獨立測試。"
+  ],
+  "expected_method_counts": {
+    "square_derivative": 2
+  },
+  "cases": [
+    {
+      "case_id": "contrast_001",
+      "problem_id": "square_derivative",
+      "problem_text": "求函數 f(x) = x² 在任意實數 x 的導數，並證明導數為 2x。",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem contrast_square (x : ℝ) : HasDerivAt (fun y : ℝ => y ^ 2) (2 * x) x :=",
+      "proof_body": "by\n  apply hasDerivAt_iff_tendsto_slope.mpr\n  have hc : ContinuousAt (fun y : ℝ => y + x) x :=\n    continuousAt_id.add continuousAt_const\n  have hlim : Filter.Tendsto (fun y : ℝ => y + x)\n      (nhdsWithin x {x}ᶜ) (nhds (2 * x)) := by\n    simpa only [two_mul] using hc.tendsto.mono_left\n      (nhdsWithin_le_nhds : nhdsWithin x {x}ᶜ ≤ nhds x)\n  apply hlim.congr'\n  filter_upwards [self_mem_nhdsWithin] with y hy\n  have hyne : y - x ≠ 0 := sub_ne_zero.mpr (by simpa using hy)\n  simp only [slope_def_field]\n  field_simp [hyne]\n  ring",
+      "reference": {
+        "primary_technique": "Derivative Definition",
+        "rationale": "以導數的差商極限定義作為主要目標，將 (y² − x²)/(y − x) 化為 y + x，再證明 y 趨近 x 時極限為 2x。代數化簡與連續性用於求差商極限，未套用冪次微分法則。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "origin": "Codex 依使用者同意的對照設計編寫",
+        "variant": "以 y 趨近 x 表示差商極限"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 102.53404162498191,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"env\": 1\n}",
+        "checked_at": "2026-10-01T15:10:01.707343+08:00"
+      }
+    },
+    {
+      "case_id": "contrast_002",
+      "problem_id": "square_derivative",
+      "problem_text": "求函數 f(x) = x² 在任意實數 x 的導數，並證明導數為 2x。",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem contrast_square (x : ℝ) : HasDerivAt (fun y : ℝ => y ^ 2) (2 * x) x :=",
+      "proof_body": "by\n  apply hasDerivAt_iff_tendsto_slope_zero.mpr\n  have hc : ContinuousAt (fun h : ℝ => 2 * x + h) 0 :=\n    continuousAt_const.add continuousAt_id\n  have hlim : Filter.Tendsto (fun h : ℝ => 2 * x + h)\n      (nhdsWithin 0 {0}ᶜ) (nhds (2 * x)) := by\n    simpa only [add_zero] using hc.tendsto.mono_left\n      (nhdsWithin_le_nhds : nhdsWithin 0 {0}ᶜ ≤ nhds (0 : ℝ))\n  apply hlim.congr'\n  filter_upwards [self_mem_nhdsWithin] with h hh\n  have hne : h ≠ 0 := by simpa using hh\n  simp only [smul_eq_mul]\n  field_simp [hne]\n  ring",
+      "reference": {
+        "primary_technique": "Derivative Definition",
+        "rationale": "以增量 h 趨近 0 的差商極限定義，展開並化簡 ((x + h)² − x²)/h 為 2x + h，證明其極限為 2x。與前一份僅差在差商參數表示，主要方法相同。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "origin": "Codex 依使用者同意的對照設計編寫",
+        "variant": "以增量 h 趨近 0 表示差商極限"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 0.0655502500012517,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"env\": 2\n}",
+        "checked_at": "2026-10-01T15:10:01.773257+08:00"
+      }
+    },
+    {
+      "case_id": "contrast_003",
+      "problem_id": "square_derivative",
+      "problem_text": "求函數 f(x) = x² 在任意實數 x 的導數，並證明導數為 2x。",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem contrast_square (x : ℝ) : HasDerivAt (fun y : ℝ => y ^ 2) (2 * x) x :=",
+      "proof_body": "by\n  simpa using (hasDerivAt_pow 2 x)",
+      "reference": {
+        "primary_technique": "Power Rule",
+        "rationale": "直接套用 xⁿ 的冪次微分法則，令 n = 2，並化簡 2x^(2 − 1) 為 2x；未自行證明差商極限。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "origin": "Codex 依使用者同意的對照設計編寫",
+        "variant": "直接套用一般冪函數的微分定理"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 0.0428463330026716,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"env\": 3\n}",
+        "checked_at": "2026-10-01T15:10:01.816143+08:00"
+      }
+    },
+    {
+      "case_id": "contrast_004",
+      "problem_id": "square_derivative",
+      "problem_text": "求函數 f(x) = x² 在任意實數 x 的導數，並證明導數為 2x。",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem contrast_square (x : ℝ) : HasDerivAt (fun y : ℝ => y ^ 2) (2 * x) x :=",
+      "proof_body": "by\n  have hid : HasDerivAt (fun y : ℝ => y) 1 x := hasDerivAt_id x\n  have hpow := hid.pow 2\n  simpa using hpow",
+      "reference": {
+        "primary_technique": "Power Rule",
+        "rationale": "先取得恆等函數的導數為 1，再以 HasDerivAt.pow 的冪次微分法則令 n = 2 並化簡；和直接套用一般冪函數定理同屬 Power Rule，未展開差商極限。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "origin": "Codex 依使用者同意的對照設計編寫",
+        "variant": "從恆等函數套用冪次微分法則"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 0.03980191703885794,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"env\": 4\n}",
+        "checked_at": "2026-10-01T15:10:01.855991+08:00"
+      }
+    }
+  ],
+  "lean_environment": {
+    "toolchain": "leanprover/lean4:v4.30.0-rc2",
+    "mathlib_revision": "e6b85444bca76ab71662613e9c7dbbd702302272",
+    "verification_backend": "既有 Lean REPL；每份證明使用相同的 Mathlib 基礎環境獨立檢查。",
+    "statement_fidelity_basis": "四份證明使用完全相同的 HasDerivAt 命題，表示實函數 x² 在任意實數 x 的導數為 2x。"
+  }
+}
