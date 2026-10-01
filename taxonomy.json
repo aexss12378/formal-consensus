@@ -1,5 +1,5 @@
 {
-  "version": "stewart-9e-ch1-4-primary-v1",
+  "version": "stewart-9e-ch1-4-primary-v2",
   "primary_techniques": [
     "Domain and Range Analysis",
     "Piecewise Function Case Analysis",
@@ -12,7 +12,6 @@
     "One-to-One Function Test",
     "Trigonometric Identities",
     "Point-Slope Equation of a Line",
-    "Tangent Line as Limit of Secant Lines",
     "Use the Graph to State Limits",
     "Use a Table of Values to Estimate Limits",
     "One-Sided Limits",
@@ -60,6 +59,8 @@
     "Summary of Curve Sketching",
     "Optimization Problems",
     "Newton's Method"
-  ]
+  ],
+  "primary_technique_notes": {
+    "Derivative Definition": "差商是割線斜率，差商的極限是切線斜率；這是導數定義的幾何意義，與用差商極限計算導數屬於同一主要方法，不另列為獨立方法。"
+  }
 }
-
