@@ -1,0 +1,386 @@
+{
+  "schema_version": 1,
+  "dataset_id": "jev_primary_method_pilot_v1",
+  "purpose": "小規模試測 Jev 對課本主要方法的分類，檢查同方法不同推導及輔助方法誤判。",
+  "evaluation_role": "pilot",
+  "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+  "reference_label_basis": "逐份檢視證明結構後提出標準方法標籤；使用者於 2026-10-01 同意兩題的標籤。未直接沿用生成模型自填標籤或既有模型方法審查結果。Lean 驗證不證明方法標籤正確。",
+  "selection": "完整收錄這兩題最終共享池的全部 11 份證明，未依 Jev 結果挑選。",
+  "case_type_definitions": {
+    "same_method_variant": "同一題、同一主要方法的推導變體，應分到同一類。",
+    "auxiliary_method": "證明含有明確的輔助方法，應依主要證明結構分類。"
+  },
+  "case_type_note": "案例類型可重疊；同一份證明可同時測試推導變體與輔助方法誤判。",
+  "classifier_input_policy": "僅傳入 problem_text、lean_imports、移除 theorem 宣告名稱後的 Lean 命題型別，以及 proof_body。不得傳入案例或題目編號、reference、source、lean_recheck、方法種類數或本資料集的限制說明。",
+  "limitations": [
+    "只有兩個題目與兩個標準方法類別，不能代表完整課本方法清單的分類能力。",
+    "ε–δ 題目原文明示使用極限的精確定義，僅依題目猜標籤也可能答對，不能證明分類器確實辨識證明方法。",
+    "原始題號及 theorem 宣告名稱含有方法提示，僅供來源追蹤；分類輸入須移除這些識別資訊。",
+    "每題的標準方法種類數均為 1，沒有同一題採用不同主要方法的案例，因此不能完整測量不同方法被合併的錯誤。",
+    "每題的多份證明為同題推導變體，不是 11 個獨立題目；整體解答正確率不能當成跨題泛化能力的證據。",
+    "若用這批資料調整方法說明，之後仍須使用不同題目作獨立測試。",
+    "尚未呼叫 Jev，也沒有分類結果或合格門檻。"
+  ],
+  "expected_method_counts": {
+    "midterm_q3_epsilon_delta": 1,
+    "midterm_q4_piecewise_continuity": 1
+  },
+  "cases": [
+    {
+      "case_id": "pilot_001",
+      "problem_id": "midterm_q3_epsilon_delta",
+      "problem_text": "Prove the statement using the epsilon-delta definition of a limit: the limit of (x^2 - 2x - 8)/(x - 4) as x approaches 4 is 6.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q3_epsilon_delta :\n    ∀ ε : ℝ, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ x : ℝ,\n      0 < |x - 4| → |x - 4| < δ → |(x ^ 2 - 2 * x - 8) / (x - 4) - 6| < ε :=",
+      "proof_body": "by\n  intro ε hε\n  refine ⟨ε, hε, ?_⟩\n  intro x hx hxδ\n  have hxne : x - 4 ≠ 0 := abs_pos.mp hx\n  have hfac : x ^ 2 - 2 * x - 8 = (x - 4) * (x + 2) := by ring\n  have hval : (x ^ 2 - 2 * x - 8) / (x - 4) = x + 2 := by\n    rw [hfac]\n    field_simp [hxne]\n  calc\n    |(x ^ 2 - 2 * x - 8) / (x - 4) - 6| = |(x + 2) - 6| := by rw [hval]\n    _ = |x - 4| := by\n      congr 1\n      ring\n    _ < ε := hxδ",
+      "reference": {
+        "primary_technique": "Precise Definition of a Limit",
+        "rationale": "證明先任取正數 ε，再選 δ = ε，最後由距離條件得到誤差小於 ε，完成 ε–δ 定義要求。因式分解與約分只用來將誤差化為 |x - 4|，屬於輔助代數步驟。",
+        "case_types": [
+          "same_method_variant",
+          "auxiliary_method"
+        ],
+        "status": "user_approved"
+      },
+      "source": {
+        "problem_file": "runs/teacher_exam/input.json",
+        "pool_file": "runs/teacher_exam/problems/midterm_q3_epsilon_delta/pool_after_round_002.json",
+        "candidate_id": "midterm_q3_epsilon_delta__C0001",
+        "round": 1,
+        "backend_verification_file": "runs/teacher_exam/problems/midterm_q3_epsilon_delta/rounds/round_001/backend_verification.json",
+        "backend_status": "accepted_verified",
+        "recorded_at": "2026-09-29T20:44:19.759691+00:00"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "checked_at": "2026-10-01T06:35:37.630167+00:00"
+      }
+    },
+    {
+      "case_id": "pilot_002",
+      "problem_id": "midterm_q3_epsilon_delta",
+      "problem_text": "Prove the statement using the epsilon-delta definition of a limit: the limit of (x^2 - 2x - 8)/(x - 4) as x approaches 4 is 6.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q3_epsilon_delta :\n    ∀ ε : ℝ, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ x : ℝ,\n      0 < |x - 4| → |x - 4| < δ → |(x ^ 2 - 2 * x - 8) / (x - 4) - 6| < ε :=",
+      "proof_body": "by\n  intro ε hε\n  use ε\n  constructor\n  · exact hε\n  · intro x hx hδ\n    have h1 : x - 4 ≠ 0 := by\n      intro h\n      rw [h] at hx\n      norm_num at hx\n    have h2 : (x ^ 2 - 2 * x - 8) / (x - 4) = x + 2 := by\n      field_simp [h1]\n      ring\n    rw [h2]\n    have h3 : |(x + 2) - 6| = |x - 4| := by\n      ring_nf\n    rw [h3]\n    exact hδ",
+      "reference": {
+        "primary_technique": "Precise Definition of a Limit",
+        "rationale": "證明任取正數 ε 並選 δ = ε，逐項證明 δ 為正及距離條件下的誤差界。field_simp 與 ring 只負責化簡商式，主要方法仍為 ε–δ 定義。",
+        "case_types": [
+          "same_method_variant",
+          "auxiliary_method"
+        ],
+        "status": "user_approved"
+      },
+      "source": {
+        "problem_file": "runs/teacher_exam/input.json",
+        "pool_file": "runs/teacher_exam/problems/midterm_q3_epsilon_delta/pool_after_round_002.json",
+        "candidate_id": "midterm_q3_epsilon_delta__C0002",
+        "round": 1,
+        "backend_verification_file": "runs/teacher_exam/problems/midterm_q3_epsilon_delta/rounds/round_001/backend_verification.json",
+        "backend_status": "accepted_verified",
+        "recorded_at": "2026-09-29T20:44:19.814625+00:00"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "checked_at": "2026-10-01T06:35:37.724854+00:00"
+      }
+    },
+    {
+      "case_id": "pilot_003",
+      "problem_id": "midterm_q3_epsilon_delta",
+      "problem_text": "Prove the statement using the epsilon-delta definition of a limit: the limit of (x^2 - 2x - 8)/(x - 4) as x approaches 4 is 6.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q3_epsilon_delta :\n    ∀ ε : ℝ, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ x : ℝ,\n      0 < |x - 4| → |x - 4| < δ → |(x ^ 2 - 2 * x - 8) / (x - 4) - 6| < ε :=",
+      "proof_body": "by\n  intro ε hε\n  use ε / 2\n  constructor\n  · linarith\n  · intro x hx hδ\n    have h1 : x - 4 ≠ 0 := by\n      intro h\n      rw [h] at hx\n      norm_num at hx\n    have h2 : (x ^ 2 - 2 * x - 8) / (x - 4) = x + 2 := by\n      field_simp [h1]\n      ring\n    rw [h2]\n    have h3 : |(x + 2) - 6| = |x - 4| := by\n      ring_nf\n    rw [h3]\n    linarith",
+      "reference": {
+        "primary_technique": "Precise Definition of a Limit",
+        "rationale": "證明任取正數 ε 並選 δ = ε / 2，再利用距離條件推出誤差小於 ε。δ 的選擇不同與不等式推導不同，均不構成新的主要方法；商式化簡為輔助步驟。",
+        "case_types": [
+          "same_method_variant",
+          "auxiliary_method"
+        ],
+        "status": "user_approved"
+      },
+      "source": {
+        "problem_file": "runs/teacher_exam/input.json",
+        "pool_file": "runs/teacher_exam/problems/midterm_q3_epsilon_delta/pool_after_round_002.json",
+        "candidate_id": "midterm_q3_epsilon_delta__C0003",
+        "round": 1,
+        "backend_verification_file": "runs/teacher_exam/problems/midterm_q3_epsilon_delta/rounds/round_001/backend_verification.json",
+        "backend_status": "accepted_verified",
+        "recorded_at": "2026-09-29T20:44:19.902224+00:00"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "checked_at": "2026-10-01T06:35:37.855085+00:00"
+      }
+    },
+    {
+      "case_id": "pilot_004",
+      "problem_id": "midterm_q3_epsilon_delta",
+      "problem_text": "Prove the statement using the epsilon-delta definition of a limit: the limit of (x^2 - 2x - 8)/(x - 4) as x approaches 4 is 6.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q3_epsilon_delta :\n    ∀ ε : ℝ, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ x : ℝ,\n      0 < |x - 4| → |x - 4| < δ → |(x ^ 2 - 2 * x - 8) / (x - 4) - 6| < ε :=",
+      "proof_body": "by\n  intro ε hε\n  use min ε 1\n  constructor\n  · cases min_cases ε 1 with\n    | inl h => linarith\n    | inr h => linarith\n  · intro x hx hδ\n    have h1 : x - 4 ≠ 0 := by\n      intro h\n      rw [h] at hx\n      norm_num at hx\n    have h2 : (x ^ 2 - 2 * x - 8) / (x - 4) = x + 2 := by\n      field_simp [h1]\n      ring\n    rw [h2]\n    have h3 : |(x + 2) - 6| = |x - 4| := by\n      ring_nf\n    rw [h3]\n    cases min_cases ε 1 with\n    | inl h =>\n      have h4 : |x - 4| < ε := by linarith [hδ, h]\n      exact h4\n    | inr h =>\n      have h4 : |x - 4| < 1 := by linarith [hδ, h]\n      have h5 : |x - 4| < ε := by linarith [h4, hε]\n      exact h5",
+      "reference": {
+        "primary_technique": "Precise Definition of a Limit",
+        "rationale": "證明任取正數 ε 並選 δ = min ε 1，再依最小值的情形證明誤差界。最小值分類與代數化簡服務於 ε–δ 證明；這份證明並未以極限運算法則推導極限。",
+        "case_types": [
+          "same_method_variant",
+          "auxiliary_method"
+        ],
+        "status": "user_approved"
+      },
+      "source": {
+        "problem_file": "runs/teacher_exam/input.json",
+        "pool_file": "runs/teacher_exam/problems/midterm_q3_epsilon_delta/pool_after_round_002.json",
+        "candidate_id": "midterm_q3_epsilon_delta__C0004",
+        "round": 1,
+        "backend_verification_file": "runs/teacher_exam/problems/midterm_q3_epsilon_delta/rounds/round_001/backend_verification.json",
+        "backend_status": "accepted_verified",
+        "recorded_at": "2026-09-29T20:44:20.026770+00:00"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "checked_at": "2026-10-01T06:35:37.991946+00:00"
+      }
+    },
+    {
+      "case_id": "pilot_005",
+      "problem_id": "midterm_q4_piecewise_continuity",
+      "problem_text": "Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, and f(x) = sqrt(x - 1) if x > 1.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q4_piecewise_continuity :\n    Continuous (fun x : ℝ => if x ≤ 1 then 1 - x ^ 2 else Real.sqrt (x - 1)) :=",
+      "proof_body": "by\n  refine Continuous.if_le ?_ ?_ ?_ ?_ ?_\n  · exact continuous_const.sub (continuous_pow 2)\n  · exact Real.continuous_sqrt.comp (continuous_id.sub continuous_const)\n  · exact continuous_id\n  · exact continuous_const\n  · intro x hx\n    simp [hx]",
+      "reference": {
+        "primary_technique": "Piecewise Function Case Analysis",
+        "rationale": "以 Continuous.if_le 合併兩段函數，分別證明各段連續，並檢查分界點的函數值相等。各段的連續性運算是輔助步驟，主要結構是分段函數的連續性判定。",
+        "case_types": [
+          "same_method_variant"
+        ],
+        "status": "user_approved"
+      },
+      "source": {
+        "problem_file": "runs/teacher_exam/input.json",
+        "pool_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/pool_after_round_003.json",
+        "candidate_id": "midterm_q4_piecewise_continuity__C0001",
+        "round": 1,
+        "backend_verification_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/rounds/round_001/backend_verification.json",
+        "backend_status": "accepted_verified",
+        "recorded_at": "2026-09-29T20:47:43.519466+00:00"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "checked_at": "2026-10-01T06:35:38.059210+00:00"
+      }
+    },
+    {
+      "case_id": "pilot_006",
+      "problem_id": "midterm_q4_piecewise_continuity",
+      "problem_text": "Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, and f(x) = sqrt(x - 1) if x > 1.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q4_piecewise_continuity :\n    Continuous (fun x : ℝ => if x ≤ 1 then 1 - x ^ 2 else Real.sqrt (x - 1)) :=",
+      "proof_body": "by\n  apply Continuous.if\n  · intro x hx\n    have h1 : x = 1 := by\n      have h2 : x ∈ frontier (Set.Iic 1) := hx\n      simp at h2\n      exact h2\n    rw [h1]\n    norm_num\n  · continuity\n  · continuity",
+      "reference": {
+        "primary_technique": "Piecewise Function Case Analysis",
+        "rationale": "以 Continuous.if 合併兩段，從分界集合的邊界推出 x = 1，再確認兩段在該點相接，並證明各段連續。使用 continuity 處理各段，不另算主要方法。",
+        "case_types": [
+          "same_method_variant"
+        ],
+        "status": "user_approved"
+      },
+      "source": {
+        "problem_file": "runs/teacher_exam/input.json",
+        "pool_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/pool_after_round_003.json",
+        "candidate_id": "midterm_q4_piecewise_continuity__C0002",
+        "round": 1,
+        "backend_verification_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/rounds/round_001/backend_verification.json",
+        "backend_status": "accepted_verified",
+        "recorded_at": "2026-09-29T20:47:43.651259+00:00"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "checked_at": "2026-10-01T06:35:38.267707+00:00"
+      }
+    },
+    {
+      "case_id": "pilot_007",
+      "problem_id": "midterm_q4_piecewise_continuity",
+      "problem_text": "Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, and f(x) = sqrt(x - 1) if x > 1.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q4_piecewise_continuity :\n    Continuous (fun x : ℝ => if x ≤ 1 then 1 - x ^ 2 else Real.sqrt (x - 1)) :=",
+      "proof_body": "by\n  rw [continuous_iff_continuousAt]\n  intro a\n  by_cases ha : a ≤ 1\n  · have ha' : a < 1 ∨ a = 1 := lt_or_eq_of_le ha\n    rcases ha' with ha_lt | ha_eq\n    · refine ContinuousAt.congr (f := fun x : ℝ => 1 - x ^ 2) ?_ ?_\n      · exact (continuous_const.sub (continuous_pow 2)).continuousAt\n      · exact Filter.Eventually.mono (Iio_mem_nhds ha_lt) (fun x hx => by simp [le_of_lt hx])\n    · subst a\n      rw [continuousAt_iff_continuous_left_right]\n      constructor\n      · refine ContinuousWithinAt.congr (f := fun x : ℝ => 1 - x ^ 2) ?_ ?_ ?_\n        · exact (continuous_const.sub (continuous_pow 2)).continuousWithinAt\n        · intro x hx\n          simp [Set.mem_Iic.mp hx]\n        · simp\n      · refine ContinuousWithinAt.congr (f := fun x : ℝ => Real.sqrt (x - 1)) ?_ ?_ ?_\n        · exact (Real.continuous_sqrt.comp (continuous_id.sub continuous_const)).continuousWithinAt\n        · intro x hx\n          by_cases h : x ≤ 1\n          · have hx1 : x = 1 := le_antisymm h (Set.mem_Ici.mp hx)\n            simp [hx1]\n          · simp [h]\n        · simp\n  · refine ContinuousAt.congr (f := fun x : ℝ => Real.sqrt (x - 1)) ?_ ?_\n    · exact (Real.continuous_sqrt.comp (continuous_id.sub continuous_const)).continuousAt\n    · exact Filter.Eventually.mono (Ioi_mem_nhds (lt_of_not_ge ha)) (fun x hx => by simp [not_le_of_gt hx])",
+      "reference": {
+        "primary_technique": "Piecewise Function Case Analysis",
+        "rationale": "逐點討論 a < 1、a = 1 與 a > 1；在分界點檢查左右連續性，其餘點使用所屬分段的局部連續性。這是同一分段分類方法的較詳細推導。",
+        "case_types": [
+          "same_method_variant"
+        ],
+        "status": "user_approved"
+      },
+      "source": {
+        "problem_file": "runs/teacher_exam/input.json",
+        "pool_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/pool_after_round_003.json",
+        "candidate_id": "midterm_q4_piecewise_continuity__C0003",
+        "round": 2,
+        "backend_verification_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/rounds/round_002/backend_verification.json",
+        "backend_status": "accepted_verified",
+        "recorded_at": "2026-09-29T20:52:47.914432+00:00"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "checked_at": "2026-10-01T06:35:38.370773+00:00"
+      }
+    },
+    {
+      "case_id": "pilot_008",
+      "problem_id": "midterm_q4_piecewise_continuity",
+      "problem_text": "Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, and f(x) = sqrt(x - 1) if x > 1.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q4_piecewise_continuity :\n    Continuous (fun x : ℝ => if x ≤ 1 then 1 - x ^ 2 else Real.sqrt (x - 1)) :=",
+      "proof_body": "by\n  have h : ContinuousOn (fun x : ℝ => if x ≤ 1 then 1 - x ^ 2 else Real.sqrt (x - 1)) Set.univ := by\n    refine ContinuousOn.if ?_ ?_ ?_\n    · intro a ha\n      have ha' : a ∈ frontier {x : ℝ | x ≤ 1} := ha.2\n      change a ∈ frontier (Set.Iic (1 : ℝ)) at ha'\n      rw [frontier_Iic] at ha'\n      have ha1 : a = 1 := ha'\n      simp [ha1]\n    · exact (continuous_const.sub (continuous_pow 2)).continuousOn\n    · exact (Real.continuous_sqrt.comp (continuous_id.sub continuous_const)).continuousOn\n  simpa [continuousOn_univ] using h",
+      "reference": {
+        "primary_technique": "Piecewise Function Case Analysis",
+        "rationale": "先用 ContinuousOn.if 證明整個實數範圍上的連續性，檢查兩段在分界點相接，再轉成 Continuous。改用 ContinuousOn 不改變分段函數分類的主要方法。",
+        "case_types": [
+          "same_method_variant"
+        ],
+        "status": "user_approved"
+      },
+      "source": {
+        "problem_file": "runs/teacher_exam/input.json",
+        "pool_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/pool_after_round_003.json",
+        "candidate_id": "midterm_q4_piecewise_continuity__C0004",
+        "round": 2,
+        "backend_verification_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/rounds/round_002/backend_verification.json",
+        "backend_status": "accepted_verified",
+        "recorded_at": "2026-09-29T20:52:47.965693+00:00"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "checked_at": "2026-10-01T06:35:38.433784+00:00"
+      }
+    },
+    {
+      "case_id": "pilot_009",
+      "problem_id": "midterm_q4_piecewise_continuity",
+      "problem_text": "Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, and f(x) = sqrt(x - 1) if x > 1.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q4_piecewise_continuity :\n    Continuous (fun x : ℝ => if x ≤ 1 then 1 - x ^ 2 else Real.sqrt (x - 1)) :=",
+      "proof_body": "by\n  let f1 : ℝ → ℝ := fun x => 1 - x ^ 2\n  let f2 : ℝ → ℝ := fun x => Real.sqrt (x - 1)\n  have h1 : Continuous f1 := by continuity\n  have h2 : Continuous f2 := by continuity\n  have h3 : f1 1 = f2 1 := by norm_num\n  apply Continuous.if\n  · intro x hx\n    have h4 : x = 1 := by\n      have h5 : x ∈ frontier (Set.Iic 1) := hx\n      simp at h5\n      exact h5\n    rw [h4]\n    exact h3\n  · exact h1\n  · exact h2",
+      "reference": {
+        "primary_technique": "Piecewise Function Case Analysis",
+        "rationale": "先命名兩段函數 f1 與 f2，證明各段連續及在 x = 1 取相同值，再用 Continuous.if 合併。命名中間函數與分開寫連續性證明，不構成另一種主要方法。",
+        "case_types": [
+          "same_method_variant"
+        ],
+        "status": "user_approved"
+      },
+      "source": {
+        "problem_file": "runs/teacher_exam/input.json",
+        "pool_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/pool_after_round_003.json",
+        "candidate_id": "midterm_q4_piecewise_continuity__C0005",
+        "round": 2,
+        "backend_verification_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/rounds/round_002/backend_verification.json",
+        "backend_status": "accepted_verified",
+        "recorded_at": "2026-09-29T20:52:48.082214+00:00"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "checked_at": "2026-10-01T06:35:38.543699+00:00"
+      }
+    },
+    {
+      "case_id": "pilot_010",
+      "problem_id": "midterm_q4_piecewise_continuity",
+      "problem_text": "Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, and f(x) = sqrt(x - 1) if x > 1.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q4_piecewise_continuity :\n    Continuous (fun x : ℝ => if x ≤ 1 then 1 - x ^ 2 else Real.sqrt (x - 1)) :=",
+      "proof_body": "by\n  refine Continuous.if_le ?_ ?_ ?_ ?_ ?_\n  · continuity\n  · continuity\n  · continuity\n  · continuity\n  · intro x hx\n    rw [hx]\n    norm_num",
+      "reference": {
+        "primary_technique": "Piecewise Function Case Analysis",
+        "rationale": "以 Continuous.if_le 合併兩段，用 continuity 解決各段連續性，並在分界點化簡確認函數值相等。自動化各段推導，不改變分段函數分類的主要方法。",
+        "case_types": [
+          "same_method_variant"
+        ],
+        "status": "user_approved"
+      },
+      "source": {
+        "problem_file": "runs/teacher_exam/input.json",
+        "pool_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/pool_after_round_003.json",
+        "candidate_id": "midterm_q4_piecewise_continuity__C0006",
+        "round": 2,
+        "backend_verification_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/rounds/round_002/backend_verification.json",
+        "backend_status": "accepted_verified",
+        "recorded_at": "2026-09-29T20:52:48.170251+00:00"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "checked_at": "2026-10-01T06:35:38.633588+00:00"
+      }
+    },
+    {
+      "case_id": "pilot_011",
+      "problem_id": "midterm_q4_piecewise_continuity",
+      "problem_text": "Show that f is continuous on (-infinity, infinity), where f(x) = 1 - x^2 if x <= 1, and f(x) = sqrt(x - 1) if x > 1.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem midterm_q4_piecewise_continuity :\n    Continuous (fun x : ℝ => if x ≤ 1 then 1 - x ^ 2 else Real.sqrt (x - 1)) :=",
+      "proof_body": "by\n  apply Continuous.if\n  · intro x hx\n    have h_frontier : x ∈ frontier (Set.Iic 1) := hx\n    rw [frontier_Iic] at h_frontier\n    rw [h_frontier]\n    norm_num\n  · continuity\n  · continuity",
+      "reference": {
+        "primary_technique": "Piecewise Function Case Analysis",
+        "rationale": "以 Continuous.if 合併兩段，利用 frontier_Iic 確定分界點，再確認兩段取值相等及各段連續。邊界推導寫法不同，仍屬同一主要方法。",
+        "case_types": [
+          "same_method_variant"
+        ],
+        "status": "user_approved"
+      },
+      "source": {
+        "problem_file": "runs/teacher_exam/input.json",
+        "pool_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/pool_after_round_003.json",
+        "candidate_id": "midterm_q4_piecewise_continuity__C0007",
+        "round": 3,
+        "backend_verification_file": "runs/teacher_exam/problems/midterm_q4_piecewise_continuity/rounds/round_003/backend_verification.json",
+        "backend_status": "accepted_verified",
+        "recorded_at": "2026-09-29T20:59:56.491087+00:00"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "checked_at": "2026-10-01T06:35:38.712581+00:00"
+      }
+    }
+  ]
+}
