@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "dataset_id": "jev_absolute_limit_contrast_v1",
+  "purpose": "以既有期中考絕對值極限題，實測同題的左右極限與連續性直接代入兩種主要方法是否分得開。",
+  "evaluation_role": "pilot",
+  "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+  "reference_label_basis": "使用者於 2026-10-01 同意用此題實測。Codex 在呼叫 Jev 前依主要證明結構固定 One-Sided Limits 與 Direct Substitution Property，各兩份。標籤不是由 Jev 產生，尚未有第三方獨立標註。",
+  "selection": "完整保留事先設計的四份證明；不依 Jev 結果修改或挑選案例。",
+  "case_type_definitions": {
+    "same_method_variant": "同一主要方法的兩份推導變體應歸為同類。",
+    "different_primary_methods": "左右極限法與連續性直接代入法應分開，且標籤正確。",
+    "auxiliary_method": "左右極限法中的絕對值分情況不另算主要方法。"
+  },
+  "classifier_input_policy": "沿用原有分類指示與完整 59 個方法名稱，不加本題的分類提示；僅送相同題目、imports、移除 theorem 名稱後的命題型別及各份 proof_body。不送標準答案、案例或題號、source、lean_recheck、預期種類數或本資料集說明。",
+  "limitations": [
+    "只有一個題目與四份人工設計證明，不能代表跨題、完整方法清單或原生成模型的分類能力。",
+    "兩份同方法變體不是獨立題目，不把四份解答當成四個獨立題目。",
+    "課本方法名稱中直接代入與連續性相關標籤可能重疊；本組預先依求極限的主要策略指定 Direct Substitution Property，保留逐份依據供檢查。",
+    "Lean 通過只證明形式命題成立，不證明主要方法標籤正確。",
+    "預期兩種方法只涵蓋這四份解答，不表示此題只有兩種可能方法。",
+    "若依結果調整標籤或分類說明，本組不能再視為獨立測試。"
+  ],
+  "expected_method_counts": {
+    "midterm_q2_absolute_limit": 2
+  },
+  "cases": [
+    {
+      "case_id": "absolute_001",
+      "problem_id": "midterm_q2_absolute_limit",
+      "problem_text": "Find the limit, if it exists. If the limit does not exist, explain why.\nlim_{x→−4} (|x + 4| − 2x)",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem absolute_limit : Filter.Tendsto (fun x : ℝ => |x + 4| - 2 * x) (nhdsWithin (-4) {(-4 : ℝ)}ᶜ) (nhds (8 : ℝ)) :=",
+      "proof_body": "by\n  have hleft : Filter.Tendsto (fun x : ℝ => |x + 4| - 2 * x)\n      (nhdsWithin (-4) (Set.Iio (-4))) (nhds (8 : ℝ)) := by\n    have hc : ContinuousAt (fun x : ℝ => -3 * x - 4) (-4) := by fun_prop\n    have hlim : Filter.Tendsto (fun x : ℝ => -3 * x - 4)\n        (nhdsWithin (-4) (Set.Iio (-4))) (nhds (8 : ℝ)) := by\n      have h := hc.tendsto.mono_left\n        (nhdsWithin_le_nhds : nhdsWithin (-4) (Set.Iio (-4)) ≤ nhds (-4 : ℝ))\n      norm_num at h\n      simpa using h\n    apply hlim.congr'\n    filter_upwards [self_mem_nhdsWithin] with x hx\n    have hneg : x + 4 < 0 := by change x < -4 at hx; linarith\n    rw [abs_of_neg hneg]\n    ring\n  have hright : Filter.Tendsto (fun x : ℝ => |x + 4| - 2 * x)\n      (nhdsWithin (-4) (Set.Ioi (-4))) (nhds (8 : ℝ)) := by\n    have hc : ContinuousAt (fun x : ℝ => 4 - x) (-4) := by fun_prop\n    have hlim : Filter.Tendsto (fun x : ℝ => 4 - x)\n        (nhdsWithin (-4) (Set.Ioi (-4))) (nhds (8 : ℝ)) := by\n      have h := hc.tendsto.mono_left\n        (nhdsWithin_le_nhds : nhdsWithin (-4) (Set.Ioi (-4)) ≤ nhds (-4 : ℝ))\n      norm_num at h\n      simpa using h\n    apply hlim.congr'\n    filter_upwards [self_mem_nhdsWithin] with x hx\n    have hpos : 0 ≤ x + 4 := by change -4 < x at hx; linarith\n    rw [abs_of_nonneg hpos]\n    ring\n  rw [← nhdsLT_sup_nhdsGT]\n  exact hleft.sup hright",
+      "reference": {
+        "primary_technique": "One-Sided Limits",
+        "rationale": "先把左側表達式化為 −3x − 4、右側化為 4 − x，各求單側極限為 8，再由左右極限相等得到原極限。絕對值分情況與線性函數的連續性用於求各側極限，主要架構為左右極限法。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods",
+          "auxiliary_method"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "problem_file": "題目/114-1, Calculus(I), Midterm Exam answer.pdf",
+        "problem_file_sha256": "91fbd55c64025ff013574476b1b9d013d4a1a35692922a5f686a027afa3cba93",
+        "pdf_pages": [
+          3,
+          4
+        ],
+        "problem_position": "第二大題第 2 題",
+        "problem_transcription": "保留原英文指示；將掃描公式轉寫為文字。",
+        "proof_origin": "Codex 依使用者同意的兩種方法對照編寫；不是原實驗模型生成的證明。",
+        "variant": "先左後右，將各側化為線性函數"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 106.57379808300175,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"env\": 1\n}",
+        "checked_at": "2026-10-01T22:33:45.413301+08:00"
+      }
+    },
+    {
+      "case_id": "absolute_002",
+      "problem_id": "midterm_q2_absolute_limit",
+      "problem_text": "Find the limit, if it exists. If the limit does not exist, explain why.\nlim_{x→−4} (|x + 4| − 2x)",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem absolute_limit : Filter.Tendsto (fun x : ℝ => |x + 4| - 2 * x) (nhdsWithin (-4) {(-4 : ℝ)}ᶜ) (nhds (8 : ℝ)) :=",
+      "proof_body": "by\n  have hright : Filter.Tendsto (fun x : ℝ => |x + 4| - 2 * x)\n      (nhdsWithin (-4) (Set.Ioi (-4))) (nhds (8 : ℝ)) := by\n    have hc : ContinuousAt (fun x : ℝ => (x + 4) - 2 * x) (-4) := by fun_prop\n    have hlim : Filter.Tendsto (fun x : ℝ => (x + 4) - 2 * x)\n        (nhdsWithin (-4) (Set.Ioi (-4))) (nhds (8 : ℝ)) := by\n      have h := hc.tendsto.mono_left\n        (nhdsWithin_le_nhds : nhdsWithin (-4) (Set.Ioi (-4)) ≤ nhds (-4 : ℝ))\n      norm_num at h\n      simpa using h\n    apply hlim.congr'\n    filter_upwards [self_mem_nhdsWithin] with x hx\n    have hxadd : 0 ≤ x + 4 := by change -4 < x at hx; linarith\n    simp only [abs_of_nonneg hxadd]\n  have hleft : Filter.Tendsto (fun x : ℝ => |x + 4| - 2 * x)\n      (nhdsWithin (-4) (Set.Iio (-4))) (nhds (8 : ℝ)) := by\n    have hc : ContinuousAt (fun x : ℝ => -(x + 4) - 2 * x) (-4) := by fun_prop\n    have hlim : Filter.Tendsto (fun x : ℝ => -(x + 4) - 2 * x)\n        (nhdsWithin (-4) (Set.Iio (-4))) (nhds (8 : ℝ)) := by\n      have h := hc.tendsto.mono_left\n        (nhdsWithin_le_nhds : nhdsWithin (-4) (Set.Iio (-4)) ≤ nhds (-4 : ℝ))\n      norm_num at h\n      simpa using h\n    apply hlim.congr'\n    filter_upwards [self_mem_nhdsWithin] with x hx\n    have hxadd : x + 4 ≤ 0 := by change x < -4 at hx; linarith\n    simp only [abs_of_nonpos hxadd]\n  simpa only [nhdsLT_sup_nhdsGT] using hleft.sup hright",
+      "reference": {
+        "primary_technique": "One-Sided Limits",
+        "rationale": "先求右極限，再求左極限；各側依 x + 4 的符號移除絕對值，兩側皆為 8，再合併。相較前一份只改變順序與代數寫法，仍是左右極限法。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods",
+          "auxiliary_method"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "problem_file": "題目/114-1, Calculus(I), Midterm Exam answer.pdf",
+        "problem_file_sha256": "91fbd55c64025ff013574476b1b9d013d4a1a35692922a5f686a027afa3cba93",
+        "pdf_pages": [
+          3,
+          4
+        ],
+        "problem_position": "第二大題第 2 題",
+        "problem_transcription": "保留原英文指示；將掃描公式轉寫為文字。",
+        "proof_origin": "Codex 依使用者同意的兩種方法對照編寫；不是原實驗模型生成的證明。",
+        "variant": "先右後左，保留各側未展開的代數式"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 0.18234204105101526,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"env\": 2\n}",
+        "checked_at": "2026-10-01T22:33:45.596457+08:00"
+      }
+    },
+    {
+      "case_id": "absolute_003",
+      "problem_id": "midterm_q2_absolute_limit",
+      "problem_text": "Find the limit, if it exists. If the limit does not exist, explain why.\nlim_{x→−4} (|x + 4| − 2x)",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem absolute_limit : Filter.Tendsto (fun x : ℝ => |x + 4| - 2 * x) (nhdsWithin (-4) {(-4 : ℝ)}ᶜ) (nhds (8 : ℝ)) :=",
+      "proof_body": "by\n  have hc : Continuous (fun x : ℝ => |x + 4| - 2 * x) := by\n    fun_prop\n  have hlim := hc.continuousAt.tendsto.mono_left\n    (nhdsWithin_le_nhds : nhdsWithin (-4) {(-4 : ℝ)}ᶜ ≤ nhds (-4 : ℝ))\n  norm_num at hlim\n  exact hlim",
+      "reference": {
+        "primary_technique": "Direct Substitution Property",
+        "rationale": "證明整個函數由連續函數組成而連續，極限等於該點函數值，直接代入 −4 得 8；未拆成左右極限。此組固定將以連續性取得點值後代入的策略標為 Direct Substitution Property。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "problem_file": "題目/114-1, Calculus(I), Midterm Exam answer.pdf",
+        "problem_file_sha256": "91fbd55c64025ff013574476b1b9d013d4a1a35692922a5f686a027afa3cba93",
+        "pdf_pages": [
+          3,
+          4
+        ],
+        "problem_position": "第二大題第 2 題",
+        "problem_transcription": "保留原英文指示；將掃描公式轉寫為文字。",
+        "proof_origin": "Codex 依使用者同意的兩種方法對照編寫；不是原實驗模型生成的證明。",
+        "variant": "先證明全域連續，再代入該點"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 0.03705266595352441,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"env\": 3\n}",
+        "checked_at": "2026-10-01T22:33:45.633547+08:00"
+      }
+    },
+    {
+      "case_id": "absolute_004",
+      "problem_id": "midterm_q2_absolute_limit",
+      "problem_text": "Find the limit, if it exists. If the limit does not exist, explain why.\nlim_{x→−4} (|x + 4| − 2x)",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem absolute_limit : Filter.Tendsto (fun x : ℝ => |x + 4| - 2 * x) (nhdsWithin (-4) {(-4 : ℝ)}ᶜ) (nhds (8 : ℝ)) :=",
+      "proof_body": "by\n  have hadd : ContinuousAt (fun x : ℝ => x + 4) (-4) :=\n    continuousAt_id.add continuousAt_const\n  have habs : ContinuousAt (fun x : ℝ => |x + 4|) (-4) := hadd.abs\n  have hlinear : ContinuousAt (fun x : ℝ => 2 * x) (-4) :=\n    continuousAt_id.const_mul 2\n  have hc : ContinuousAt (fun x : ℝ => |x + 4| - 2 * x) (-4) :=\n    habs.sub hlinear\n  have hlim := hc.tendsto.mono_left\n    (nhdsWithin_le_nhds : nhdsWithin (-4) {(-4 : ℝ)}ᶜ ≤ nhds (-4 : ℝ))\n  norm_num at hlim\n  exact hlim",
+      "reference": {
+        "primary_technique": "Direct Substitution Property",
+        "rationale": "逐步利用和、絕對值、常數倍及差的連續性，證明函數在 −4 連續，再以該點函數值求極限為 8。與全域連續證明同屬直接代入策略，逐項證明連續性不另算一種主要方法。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "problem_file": "題目/114-1, Calculus(I), Midterm Exam answer.pdf",
+        "problem_file_sha256": "91fbd55c64025ff013574476b1b9d013d4a1a35692922a5f686a027afa3cba93",
+        "pdf_pages": [
+          3,
+          4
+        ],
+        "problem_position": "第二大題第 2 題",
+        "problem_transcription": "保留原英文指示；將掃描公式轉寫為文字。",
+        "proof_origin": "Codex 依使用者同意的兩種方法對照編寫；不是原實驗模型生成的證明。",
+        "variant": "逐項證明該點連續，再代入該點"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 0.05080245796125382,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"env\": 4\n}",
+        "checked_at": "2026-10-01T22:33:45.684384+08:00"
+      }
+    }
+  ],
+  "lean_environment": {
+    "toolchain": "leanprover/lean4:v4.30.0-rc2",
+    "mathlib_revision": "e6b85444bca76ab71662613e9c7dbbd702302272",
+    "verification_backend": "既有 Lean REPL；四份證明各從相同的 Mathlib 基礎環境獨立檢查。",
+    "statement_fidelity_basis": "保留原題的雙側實數極限，使用 nhdsWithin (-4) {(-4 : ℝ)}ᶜ 表示去心鄰域；目標值固定為 8。"
+  }
+}
