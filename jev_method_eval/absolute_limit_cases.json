@@ -3,7 +3,7 @@
   "dataset_id": "jev_absolute_limit_contrast_v1",
   "purpose": "以既有期中考絕對值極限題，實測同題的左右極限與連續性直接代入兩種主要方法是否分得開。",
   "evaluation_role": "pilot",
-  "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+  "taxonomy_version": "stewart-9e-ch1-4-primary-v2",
   "reference_label_basis": "使用者於 2026-10-01 同意用此題實測。Codex 在呼叫 Jev 前依主要證明結構固定 One-Sided Limits 與 Direct Substitution Property，各兩份。標籤不是由 Jev 產生，尚未有第三方獨立標註。",
   "selection": "完整保留事先設計的四份證明；不依 Jev 結果修改或挑選案例。",
   "case_type_definitions": {
@@ -11,7 +11,7 @@
     "different_primary_methods": "左右極限法與連續性直接代入法應分開，且標籤正確。",
     "auxiliary_method": "左右極限法中的絕對值分情況不另算主要方法。"
   },
-  "classifier_input_policy": "沿用原有分類指示與完整 59 個方法名稱，不加本題的分類提示；僅送相同題目、imports、移除 theorem 名稱後的命題型別及各份 proof_body。不送標準答案、案例或題號、source、lean_recheck、預期種類數或本資料集說明。",
+  "classifier_input_policy": "沿用原有分類指示與完整 58 個方法名稱，不加本題的分類提示；僅送相同題目、imports、移除 theorem 名稱後的命題型別及各份 proof_body。不送標準答案、案例或題號、source、lean_recheck、預期種類數或本資料集說明。",
   "limitations": [
     "只有一個題目與四份人工設計證明，不能代表跨題、完整方法清單或原生成模型的分類能力。",
     "兩份同方法變體不是獨立題目，不把四份解答當成四個獨立題目。",
