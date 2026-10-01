@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "dataset_id": "jev_cubic_derivative_contrast_v1",
+  "purpose": "以期中考第 5(a) 題的四份證明，檢查兩種主要方法能否分開，以及同方法的推導變體能否歸為同類。",
+  "evaluation_role": "development",
+  "taxonomy_version": "stewart-9e-ch1-4-primary-v2",
+  "reference_label_basis": "使用者同意建立導數定義與 Power Rule 各兩份解答，並決定把割線極限的幾何詮釋併入 Derivative Definition。Codex 依這項分類決定與各份證明的實際結構，在呼叫 Jev 前固定標籤。本題與使用者的分類決定參與分類表調整，因此不是獨立測試資料；這些標籤也不是第三方獨立標註。",
+  "selection": "完整保留事先設計的四份證明；尚未呼叫 Jev，不依其輸出挑選案例或調整標籤。",
+  "case_type_definitions": {
+    "same_method_variant": "同一題、同一主要方法的推導變體，應分到同一類。",
+    "different_primary_methods": "同一題採用不同主要方法，應分到不同類且符合事先固定的標籤。"
+  },
+  "classifier_input_policy": "沿用既有分類指示與完整 58 個方法選項；只提供相同的 problem_text、lean_imports、移除 theorem 名稱後的命題型別，以及各份 proof_body。不傳標準標籤、分類理由、來源、案例或題號、Lean 驗證結果、預期方法種類數或本資料集說明。證明本體不含自然語言註解。",
+  "problem_source": {
+    "path": "題目/114-1, Calculus(I), Midterm Exam answer.pdf",
+    "sha256": "91fbd55c64025ff013574476b1b9d013d4a1a35692922a5f686a027afa3cba93",
+    "pdf_pages": [
+      4,
+      5
+    ],
+    "question": "第 II 部分第 5(a) 題；不包含第 5(b) 題",
+    "problem_text_policy": "依原題轉錄，保留函數、參數 a 與求切線斜率的目標。",
+    "solution_policy": "第一份依原詳解的差商極限策略編寫 Lean 證明，其餘三份由 Codex 編寫。原詳解未提供主要方法分類標籤。"
+  },
+  "method_reference_sources": {
+    "Derivative Definition": [
+      "題目/114-1, Calculus(I), Midterm Exam answer.pdf，第 5 頁第 5(a) 題詳解",
+      "https://openstax.org/books/calculus-volume-1/pages/3-1-defining-the-derivative"
+    ],
+    "Power Rule": [
+      "https://openstax.org/books/calculus-volume-1/pages/3-3-differentiation-rules"
+    ]
+  },
+  "limitations": [
+    "本題參與分類表合併的討論，只作開發案例，不作獨立測試或正式分類能力結論。",
+    "只有一個題目、兩種方法與四份人工編寫的證明；四份解答不是四個獨立題目。",
+    "Lean 通過只證明固定形式化命題成立，不是主要方法標籤正確或原解答忠實的證據。",
+    "標籤在 Jev 呼叫前固定，但仍缺乏第三方獨立標註。",
+    "預期兩種方法只涵蓋這四份受測解答，不表示本題只有兩種可能的課本方法。",
+    "目前 5 條可選的 Jev 工作定義涵蓋極限相關類別；本題不能單獨證明這 5 條規則的效果。"
+  ],
+  "expected_method_counts": {
+    "midterm_q5a_cubic_tangent": 2
+  },
+  "cases": [
+    {
+      "case_id": "cubic_001",
+      "problem_id": "midterm_q5a_cubic_tangent",
+      "problem_text": "Find the slope of the tangent to the curve y = 3 + 4x² − 2x³ at the point where x = a.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem cubic_tangent (a : ℝ) : HasDerivAt (fun y : ℝ => 3 + 4 * y ^ 2 - 2 * y ^ 3) (8 * a - 6 * a ^ 2) a :=",
+      "proof_body": "by\n  apply hasDerivAt_iff_tendsto_slope_zero.mpr\n  have hc : ContinuousAt\n      (fun h : ℝ => 8 * a + 4 * h - 6 * a ^ 2 - 6 * a * h - 2 * h ^ 2) 0 := by\n    fun_prop\n  have hlim : Filter.Tendsto\n      (fun h : ℝ => 8 * a + 4 * h - 6 * a ^ 2 - 6 * a * h - 2 * h ^ 2)\n      (nhdsWithin (0 : ℝ) {(0 : ℝ)}ᶜ) (nhds (8 * a - 6 * a ^ 2)) := by\n    have h := hc.tendsto.mono_left\n      (nhdsWithin_le_nhds : nhdsWithin (0 : ℝ) {(0 : ℝ)}ᶜ ≤ nhds (0 : ℝ))\n    simpa using h\n  apply hlim.congr'\n  filter_upwards [self_mem_nhdsWithin] with h hh\n  have hne : h ≠ 0 := by simpa using hh\n  simp only [smul_eq_mul]\n  field_simp [hne]\n  ring",
+      "reference": {
+        "primary_technique": "Derivative Definition",
+        "rationale": "以導數定義將主要目標轉為差商極限，展開 f(a + h) − f(a)，除去非零的 h，再求極限。連續性只用於化簡後的差商；沒有套用冪次微分法則。割線斜率的幾何解釋已併入 Derivative Definition。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "origin": "Codex 依原詳解的策略編寫",
+        "variant": "以增量 h 趨近 0 表示差商極限，對應原詳解策略"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 138.2865322920261,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"env\": 1\n}",
+        "checked_at": "2026-10-02T01:14:01.153550+08:00"
+      }
+    },
+    {
+      "case_id": "cubic_002",
+      "problem_id": "midterm_q5a_cubic_tangent",
+      "problem_text": "Find the slope of the tangent to the curve y = 3 + 4x² − 2x³ at the point where x = a.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem cubic_tangent (a : ℝ) : HasDerivAt (fun y : ℝ => 3 + 4 * y ^ 2 - 2 * y ^ 3) (8 * a - 6 * a ^ 2) a :=",
+      "proof_body": "by\n  apply hasDerivAt_iff_tendsto_slope.mpr\n  have hc : ContinuousAt\n      (fun y : ℝ => 4 * (y + a) - 2 * (y ^ 2 + y * a + a ^ 2)) a := by\n    fun_prop\n  have hlim : Filter.Tendsto\n      (fun y : ℝ => 4 * (y + a) - 2 * (y ^ 2 + y * a + a ^ 2))\n      (nhdsWithin a {a}ᶜ) (nhds (8 * a - 6 * a ^ 2)) := by\n    have h := hc.tendsto.mono_left\n      (nhdsWithin_le_nhds : nhdsWithin a {a}ᶜ ≤ nhds a)\n    convert h using 1 <;> ring\n  apply hlim.congr'\n  filter_upwards [self_mem_nhdsWithin] with y hy\n  have hyne : y - a ≠ 0 := sub_ne_zero.mpr (by simpa using hy)\n  simp only [slope_def_field]\n  field_simp [hyne]\n  ring",
+      "reference": {
+        "primary_technique": "Derivative Definition",
+        "rationale": "主要目標仍為差商極限，只改成 y 趨近 a 的表示，利用平方差與立方差化簡分子後約去 y − a。因式分解與連續性屬於求差商極限的輔助步驟，和第一份屬於同一主要方法。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "origin": "Codex 依使用者同意的對照設計編寫",
+        "variant": "以 y 趨近 a 表示差商極限，利用平方差與立方差化簡"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 0.2133897499879822,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"messages\": [\n    {\n      \"severity\": \"info\",\n      \"pos\": {\n        \"line\": 13,\n        \"column\": 26\n      },\n      \"endPos\": {\n        \"line\": 13,\n        \"column\": 30\n      },\n      \"data\": \"Try this:\\n  [apply] ring_nf\\n  \\n  The `ring` tactic failed to close the goal. Use `ring_nf` to obtain a normal form.\\n    \\n  Note that `ring` works primarily in *commutative* rings. If you have a noncommutative ring, abelian group or module, consider using `noncomm_ring`, `abel` or `module` instead.\"\n    },\n    {\n      \"severity\": \"warning\",\n      \"pos\": {\n        \"line\": 13,\n        \"column\": 22\n      },\n      \"endPos\": {\n        \"line\": 13,\n        \"column\": 25\n      },\n      \"data\": \"Used `tac1 <;> tac2` where `(tac1; tac2)` would suffice\\n\\nNote: This linter can be disabled with `set_option linter.unnecessarySeqFocus false`\"\n    }\n  ],\n  \"env\": 2\n}",
+        "checked_at": "2026-10-02T01:14:01.368248+08:00"
+      }
+    },
+    {
+      "case_id": "cubic_003",
+      "problem_id": "midterm_q5a_cubic_tangent",
+      "problem_text": "Find the slope of the tangent to the curve y = 3 + 4x² − 2x³ at the point where x = a.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem cubic_tangent (a : ℝ) : HasDerivAt (fun y : ℝ => 3 + 4 * y ^ 2 - 2 * y ^ 3) (8 * a - 6 * a ^ 2) a :=",
+      "proof_body": "by\n  have h2 : HasDerivAt (fun y : ℝ => y ^ 2) (2 * a) a := by\n    simpa using hasDerivAt_pow 2 a\n  have h3 : HasDerivAt (fun y : ℝ => y ^ 3) (3 * a ^ 2) a := by\n    simpa using hasDerivAt_pow 3 a\n  have hd := ((hasDerivAt_const a (3 : ℝ)).add (h2.const_mul 4)).sub (h3.const_mul 2)\n  convert hd using 1 <;> ring",
+      "reference": {
+        "primary_technique": "Power Rule",
+        "rationale": "以 hasDerivAt_pow 取得二次與三次冪函數的導數，再利用常數、常數倍、和差法則組合。主要計算依據是冪次微分法則，不自行展開差商極限。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "origin": "Codex 依使用者同意的對照設計編寫",
+        "variant": "直接使用一般冪函數的微分定理，逐項合併導數"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 0.11810541606973857,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"messages\": [\n    {\n      \"severity\": \"warning\",\n      \"pos\": {\n        \"line\": 9,\n        \"column\": 21\n      },\n      \"endPos\": {\n        \"line\": 9,\n        \"column\": 24\n      },\n      \"data\": \"Used `tac1 <;> tac2` where `(tac1; tac2)` would suffice\\n\\nNote: This linter can be disabled with `set_option linter.unnecessarySeqFocus false`\"\n    }\n  ],\n  \"env\": 3\n}",
+        "checked_at": "2026-10-02T01:14:01.486676+08:00"
+      }
+    },
+    {
+      "case_id": "cubic_004",
+      "problem_id": "midterm_q5a_cubic_tangent",
+      "problem_text": "Find the slope of the tangent to the curve y = 3 + 4x² − 2x³ at the point where x = a.",
+      "lean_imports": [
+        "import Mathlib"
+      ],
+      "lean_theorem_header": "theorem cubic_tangent (a : ℝ) : HasDerivAt (fun y : ℝ => 3 + 4 * y ^ 2 - 2 * y ^ 3) (8 * a - 6 * a ^ 2) a :=",
+      "proof_body": "by\n  have hid : HasDerivAt (fun y : ℝ => y) 1 a := hasDerivAt_id a\n  have h2 : HasDerivAt (fun y : ℝ => y ^ 2) (2 * a) a := by\n    simpa using hid.pow 2\n  have h3 : HasDerivAt (fun y : ℝ => y ^ 3) (3 * a ^ 2) a := by\n    simpa using hid.pow 3\n  have hpoly : HasDerivAt (fun y : ℝ => 4 * y ^ 2 - 2 * y ^ 3)\n      (4 * (2 * a) - 2 * (3 * a ^ 2)) a :=\n    (h2.const_mul 4).sub (h3.const_mul 2)\n  have hd : HasDerivAt (fun y : ℝ => 3 + (4 * y ^ 2 - 2 * y ^ 3))\n      (2 * a * (4 - 3 * a)) a := by\n    convert (hasDerivAt_const a (3 : ℝ)).add hpoly using 1 <;> ring\n  have hfun : (fun y : ℝ => 3 + 4 * y ^ 2 - 2 * y ^ 3) =\n      (fun y : ℝ => 3 + (4 * y ^ 2 - 2 * y ^ 3)) := by\n    funext y\n    ring\n  rw [hfun]\n  convert hd using 1 <;> ring",
+      "reference": {
+        "primary_technique": "Power Rule",
+        "rationale": "以 HasDerivAt.pow 套用冪次微分法則，先組合非常數項，再加入常數並整理為等價斜率形式。證明順序、定理包裝與代數整理的差異不另算主要方法，和第三份同屬 Power Rule。",
+        "case_types": [
+          "same_method_variant",
+          "different_primary_methods"
+        ],
+        "status": "predefined"
+      },
+      "source": {
+        "origin": "Codex 依使用者同意的對照設計編寫",
+        "variant": "從恆等函數套用冪次微分法則，先合併非常數項並整理斜率形式"
+      },
+      "lean_recheck": {
+        "status": "verified",
+        "verified": true,
+        "lean_file": null,
+        "module_name": null,
+        "error": null,
+        "elapsed_seconds": 0.18337225005961955,
+        "command": [
+          "lake",
+          "env",
+          "/Users/chenqien/Documents/共識解/.tools/repl/.lake/build/bin/repl"
+        ],
+        "diagnostics": "{\n  \"messages\": [\n    {\n      \"severity\": \"warning\",\n      \"pos\": {\n        \"line\": 14,\n        \"column\": 59\n      },\n      \"endPos\": {\n        \"line\": 14,\n        \"column\": 62\n      },\n      \"data\": \"Used `tac1 <;> tac2` where `(tac1; tac2)` would suffice\\n\\nNote: This linter can be disabled with `set_option linter.unnecessarySeqFocus false`\"\n    },\n    {\n      \"severity\": \"warning\",\n      \"pos\": {\n        \"line\": 20,\n        \"column\": 21\n      },\n      \"endPos\": {\n        \"line\": 20,\n        \"column\": 24\n      },\n      \"data\": \"Used `tac1 <;> tac2` where `(tac1; tac2)` would suffice\\n\\nNote: This linter can be disabled with `set_option linter.unnecessarySeqFocus false`\"\n    }\n  ],\n  \"env\": 4\n}",
+        "checked_at": "2026-10-02T01:14:01.670462+08:00"
+      }
+    }
+  ],
+  "lean_environment": {
+    "toolchain": "leanprover/lean4:v4.30.0-rc2",
+    "mathlib_revision": "e6b85444bca76ab71662613e9c7dbbd702302272",
+    "verification_backend": "既有 Lean REPL；每份證明由相同的 Mathlib 基礎環境獨立分支檢查。",
+    "statement_fidelity_basis": "四份證明使用完全相同的 HasDerivAt 命題，表示原函數在任意實數 a 的導數為 8a − 6a²；依導數與切線斜率的定義，對應原題的切線斜率。",
+    "statement_fidelity_status": "Codex 依原題人工對照；不是第三方獨立審查。"
+  }
+}
