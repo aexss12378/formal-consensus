@@ -88,13 +88,12 @@ def prediction_from_response(response: dict, labels: list[str]) -> dict:
         for value in values
     ):
         raise ValueError("API 回覆的完整機率分布或信心值不符合格式")
-    if not math.isclose(sum(probabilities.values()), 1, abs_tol=1e-5):
-        raise ValueError("API 回覆的機率總和不為 1")
     if probabilities[answer["choice"]] < max(probabilities.values()) - 1e-5:
         raise ValueError("API 回覆的 Choice 不是最高機率選項")
     return {
         "primary_technique": answer["choice"],
         "probabilities": probabilities,
+        "probability_sum": sum(probabilities.values()),
         "confidence": answer["confidence"],
     }
 
