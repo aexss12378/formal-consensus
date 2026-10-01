@@ -36,18 +36,19 @@ def read_json(path: Path) -> dict:
 def build_request(case: dict, labels: list[str]) -> dict:
     """只取分類所需欄位；移除 theorem 名稱，不傳標準答案或來源。"""
     match = re.fullmatch(
-        r"\s*theorem\s+\S+\s*:\s*(.*?)\s*:=\s*",
+        r"\s*theorem\s+[^\s:(\[{⦃]+\s*(.*?)\s*:=\s*",
         case["lean_theorem_header"],
         flags=re.DOTALL,
     )
     if match is None:
-        raise ValueError("Lean 命題須為 theorem 名稱 : 命題 := 格式")
+        raise ValueError("Lean 命題須為 theorem 宣告，並以 := 結尾")
+    statement = match.group(1).removeprefix(":").lstrip()
     return {
         "model": MODEL,
         "state": {
             "problem_text": case["problem_text"],
             "lean_imports": case["lean_imports"],
-            "lean_statement": match.group(1),
+            "lean_statement": statement,
             "proof_body": case["proof_body"],
         },
         "questions": {
