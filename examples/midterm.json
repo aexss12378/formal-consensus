@@ -8,7 +8,7 @@
         "import Mathlib"
       ],
       "lean_theorem_header": "theorem midterm_q3_epsilon_delta :\n    ∀ ε > 0, ∃ δ > 0, ∀ x : ℝ,\n      0 < |x - 4| → |x - 4| < δ →\n      |(x ^ 2 - 2 * x - 8) / (x - 4) - 6| < ε :=",
-      "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+      "taxonomy_version": "stewart-9e-ch1-4-primary-v2",
       "statement_fidelity_status": "confirmed"
     },
     {
@@ -18,7 +18,7 @@
         "import Mathlib"
       ],
       "lean_theorem_header": "theorem midterm_q4_piecewise_continuity :\n    Continuous (fun x : ℝ => if x ≤ 1 then 1 - x ^ 2 else Real.sqrt (x - 1)) :=",
-      "taxonomy_version": "stewart-9e-ch1-4-primary-v1",
+      "taxonomy_version": "stewart-9e-ch1-4-primary-v2",
       "statement_fidelity_status": "confirmed"
     }
   ]
