@@ -27,13 +27,42 @@ INSTRUCTIONS = (
     "不另算一種方法。請根據實際證明結構判斷，"
     "不要只依題目要求、命題形式、個別關鍵字或某個定理是否出現來分類。"
 )
+# 這些是已試測的工作定義，並非課本原文或獨立的標準答案。
+METHOD_RULES = {
+    "One-Sided Limits": (
+        "主要架構是分別分析左極限與右極限，再由兩者是否存在且相等判定雙側極限。"
+        "為計算各側極限而進行的絕對值拆分、代數化簡或分支連續性，屬於輔助步驟。"
+    ),
+    "Direct Substitution Property": (
+        "主要步驟是直接代入已知可套用代入性質的函數或算式並求值，"
+        "例如基本連續函數或分母在該點非零的商式。"
+        "若解答先以整個函數的連續性證明作為主要架構，再由連續性導出極限，"
+        "依本試測工作定義歸入 Continuity of a Function。"
+    ),
+    "Continuity of a Function": (
+        "主要架構是判定或證明函數在該點或整個範圍連續，或先建立整個函數的連續性，"
+        "再利用極限等於函數值求極限。最後代入數值不另算主要方法。"
+        "若連續性僅用於左右極限證明中的個別分支，主要方法仍為 One-Sided Limits。"
+    ),
+    "Properties of Continuous Functions": (
+        "主要任務是利用和、差、積、商或合成等保連續性質，建立連續性的性質或結果。"
+        "若這些性質用於先建立整個函數連續、再求指定點極限的證明，"
+        "依本試測工作定義歸入 Continuity of a Function；"
+        "若僅用於其他主要策略的局部步驟，依整份證明的策略分類。"
+    ),
+    "Absolute Value Case Analysis": (
+        "主要架構是依絕對值內部的符號拆分情況並完成題目。"
+        "若拆分僅用於求左右極限，且最後由左右極限相等判定雙側極限，"
+        "依本試測工作定義歸入 One-Sided Limits。"
+    ),
+}
 
 
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def build_request(case: dict, labels: list[str]) -> dict:
+def build_request(case: dict, labels: list[str], *, with_rules: bool = False) -> dict:
     """只取分類所需欄位；移除 theorem 名稱，不傳標準答案或來源。"""
     match = re.fullmatch(
         r"\s*theorem\s+[^\s:(\[{⦃]+\s*(.*?)\s*:=\s*",
@@ -55,7 +84,10 @@ def build_request(case: dict, labels: list[str]) -> dict:
             "primary_method": {
                 "type": "choice",
                 "instructions": INSTRUCTIONS,
-                "criteria": {label: None for label in labels},
+                "criteria": {
+                    label: METHOD_RULES.get(label) if with_rules else None
+                    for label in labels
+                },
             }
         },
     }
@@ -156,6 +188,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--taxonomy", type=Path, default=EVAL_DIR.parent / "taxonomy.json",
                         help="完整課本方法清單")
     parser.add_argument("--output", type=Path, help="結果 JSON 路徑")
+    parser.add_argument("--with-rules", action="store_true",
+                        help="附上已試測的 5 條方法工作定義；其餘選項只提供名稱")
     parser.add_argument("--dry-run", action="store_true",
                         help="只檢查並保存請求，不呼叫 API，也不計分")
     args = parser.parse_args(argv)
@@ -185,7 +219,7 @@ def main(argv: list[str] | None = None) -> int:
             "case_id": case["case_id"],
             "problem_id": case["problem_id"],
             "reference": case["reference"],
-            "request": build_request(case, labels),
+            "request": build_request(case, labels, with_rules=args.with_rules),
             "response": None,
             "prediction": None,
             "correct": None,
@@ -209,8 +243,16 @@ def main(argv: list[str] | None = None) -> int:
         "dataset_id": data["dataset_id"],
         "dataset_sha256": hashlib.sha256(args.data.read_bytes()).hexdigest(),
         "taxonomy_version": taxonomy["version"],
-        "criteria_policy": "完整方法名稱作為選項，不另加個別方法說明。",
-        "evaluation_note": "本次為小規模試測，結果只涵蓋受測解答，不代表正式合格判定。",
+        "criteria_mode": "with_rules" if args.with_rules else "names_only",
+        "criteria_policy": (
+            "完整方法名稱作為選項，5 個相近類別附上工作定義，其餘選項不另加說明。"
+            if args.with_rules else "完整方法名稱作為選項，不另加個別方法說明。"
+        ),
+        "evaluation_note": (
+            "本次為小規模試測，結果只涵蓋受測解答，不代表正式合格判定。"
+            + ("方法規則為開發階段工作定義，並非課本原文或獨立的標準答案。"
+               if args.with_rules else "")
+        ),
         "records": records,
         "summary": None,
     }
