@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "problems": [
+    {
+      "problem_id": "midterm_q8a_derivative",
+      "problem_text": "Find the derivative of the function F(t) = (1/(2t + 1))^4."
+    }
+  ]
+}

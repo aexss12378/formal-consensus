@@ -1,0 +1,13 @@
+{
+  "problem_id": "midterm_q8a_derivative",
+  "problem_text": "Find the derivative of the function F(t) = (1/(2t + 1))^4.",
+  "lean_imports": [
+    "import Mathlib"
+  ],
+  "lean_theorem_header": "theorem midterm_q8a_derivative (t : ℝ) (h : 2 * t + 1 ≠ 0) : HasDerivAt (fun s : ℝ => (1 / (2 * s + 1)) ^ 4) (-8 / (2 * t + 1) ^ 5) t :=",
+  "author": "Codex 在本次模型呼叫前提出的版本，未提供給 translation_model。",
+  "verification_note": "目前只做過 #check 型別檢查，尚未做完整 theorem 的 by sorry 占位編譯檢查。",
+  "source_pdf": "題目/114-1, Calculus(I), Midterm Exam answer.pdf",
+  "source_pdf_page": 6,
+  "source_pdf_sha256": "91fbd55c64025ff013574476b1b9d013d4a1a35692922a5f686a027afa3cba93"
+}
